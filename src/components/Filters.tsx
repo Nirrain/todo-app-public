@@ -2,7 +2,7 @@ import type { TaskFilters } from "../types";
 
 interface FiltersProps {
   filters: TaskFilters;
-  moods: string[];
+  categories: string[];
   hasManualOrder: boolean;
   disabled: boolean;
   onChange: (filters: TaskFilters) => void;
@@ -12,24 +12,13 @@ interface FiltersProps {
 
 export default function Filters({
   filters,
-  moods,
+  categories,
   hasManualOrder,
   disabled,
   onChange,
   onReset,
   onClearManualOrder,
 }: FiltersProps) {
-  function toggleMood(mood: string) {
-    const nextMoods = filters.moods.includes(mood)
-      ? filters.moods.filter((item) => item !== mood)
-      : [...filters.moods, mood];
-
-    onChange({
-      ...filters,
-      moods: nextMoods,
-    });
-  }
-
   return (
     <section className="panel" aria-labelledby="filters-heading">
       <div className="label-row">
@@ -73,21 +62,43 @@ export default function Filters({
         </label>
       </div>
 
+      <label className="field-group">
+        <span>Sort by</span>
+        <select
+          value={filters.sortMode}
+          disabled={disabled}
+          onChange={(event) =>
+            onChange({
+              ...filters,
+              sortMode: event.target.value as TaskFilters["sortMode"],
+            })
+          }
+        >
+          <option value="importance">Importance</option>
+          <option value="createdAt">Created date</option>
+          <option value="dueDate">Due date ascending</option>
+        </select>
+      </label>
+
       <div className="field-group">
-        <span>Mood</span>
-        <div className="chip-row">
-          {moods.map((mood) => (
-            <button
-              key={mood}
-              type="button"
-              disabled={disabled}
-              className={`chip ${filters.moods.includes(mood) ? "active" : ""}`}
-              onClick={() => toggleMood(mood)}
-            >
-              {mood}
-            </button>
+        <span>Category</span>
+        <select
+          value={filters.category}
+          disabled={disabled}
+          onChange={(event) =>
+            onChange({
+              ...filters,
+              category: event.target.value,
+            })
+          }
+        >
+          <option value="all">All categories</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       <div className="action-row">

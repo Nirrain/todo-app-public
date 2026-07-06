@@ -9,13 +9,18 @@ export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title" | 
     task.manualOrder !== undefined && task.manualOrder !== null
       ? task.manualOrder
       : null;
+  const legacyMood = (task as Partial<Task> & { mood?: string[] }).mood;
 
   return {
     ...task,
     notes: task.notes ?? null,
-    mood: Array.isArray(task.mood) ? task.mood : [],
+    category:
+      task.category ?? (Array.isArray(legacyMood) && legacyMood.length > 0 ? legacyMood[0] : null),
     skipped: Boolean(task.skipped),
+    completed: Boolean(task.completed),
     bigWin: Boolean(task.bigWin),
+    dueDate: task.dueDate ?? null,
+    changedAt: task.changedAt ?? task.updatedAt ?? task.createdAt,
     manualOrder,
   } as Task;
 }
@@ -29,9 +34,8 @@ export function matchesFilters(task: Task, filters: TaskFilters): boolean {
     return false;
   }
 
-  if (filters.moods.length > 0) {
-    const moodSet = new Set(task.mood);
-    return filters.moods.every((mood) => moodSet.has(mood));
+  if (filters.category !== "all" && task.category !== filters.category) {
+    return false;
   }
 
   return true;
@@ -44,9 +48,8 @@ export function scoreTask(task: Task, filters: TaskFilters): number {
     score += 40;
   }
 
-  if (filters.moods.length > 0) {
-    const moodMatches = filters.moods.filter((mood) => task.mood.includes(mood)).length;
-    score += moodMatches * 24;
+  if (filters.category !== "all" && task.category === filters.category) {
+    score += 24;
   }
 
   if (task.bigWin) {
@@ -79,6 +82,19 @@ export function sortTasks(
 
         if (leftManual !== rightManual) {
           return leftManual ? -1 : 1;
+        }
+      }
+
+      if (filters.sortMode === "createdAt" && left.createdAt !== right.createdAt) {
+        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+      }
+
+      if (filters.sortMode === "dueDate") {
+        const leftDue = left.dueDate ? new Date(left.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        const rightDue = right.dueDate ? new Date(right.dueDate).getTime() : Number.POSITIVE_INFINITY;
+
+        if (leftDue !== rightDue) {
+          return leftDue - rightDue;
         }
       }
 

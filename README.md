@@ -4,12 +4,12 @@ Top 10 Tasks is a TypeScript React + Vite Progressive Web App that is intended t
 
 ## Features
 
-- Top-10 task view with indoor/outdoor, importance, mood, notes, and big-win metadata
+- Top-10 task view with indoor/outdoor, importance, category, due date, notes, and big-win metadata
 - Compact mobile-first layout with the task list at the top of the screen
 - Inline editing directly from the visible top-10 task cards
-- Hamburger-menu settings panel for repository credentials
+- Hamburger-menu settings panel with separate Login and Categories submenus
 - Manual reprioritization with drag-and-drop plus move up/down controls
-- Skip, complete, and automatic reflow behavior
+- Skip, complete-flag, and automatic reflow behavior
 - Immediate GitHub sync on every task change
 - Browser-based GitHub sync with no backend server
 - Repository automation for GitHub Pages deployment and task reflow
@@ -86,13 +86,13 @@ The app reads and writes changes directly to the private `todo-app/data/tasks.js
 2. Create a token with permission to read and write repository contents.
    - Fine-grained token: **Contents: Read and write**
    - Classic token: `repo` is required because the data repository is private
-3. Open the app and fill in:
+3. Open the app, open the hamburger menu, and use **Login** to fill in:
    - **Data repository owner**
    - **Private data repository** (`todo-app`)
    - **Branch**
    - **GitHub token**
 
-When hosted from a GitHub Pages URL, the app defaults the data repository to `todo-app` under the same owner. The token is stored only in the browser's localStorage and is edited from the Settings menu.
+When hosted from a GitHub Pages URL, the app defaults the data repository to `todo-app` under the same owner. The token is stored only in the browser's localStorage and is edited from the **Login** submenu.
 
 ## How syncing works
 
@@ -119,11 +119,14 @@ The reflow logic:
 - preserves the top-ten limit
 - does not add decay, escalation, splitting, or grouping
 
+Completed tasks are kept in the repository with a `completed` flag instead of being deleted, and task changes update a `changedAt` timestamp.
+
 If you keep the app in `todo-app-public` and the live JSON in private `todo-app`, the reflow workflow should run from the private `todo-app` repository where `data/tasks.json` actually changes.
 
 ## Editing and manual reprioritization
 
-- Tap **Edit** on any visible task to change its title, notes, context, importance, mood tags, or big-win flag directly in the top-10 list.
+- Tap **Edit** on any visible task to change its title, notes, context, importance, category, or big-win flag directly in the top-10 list.
+- Tasks can optionally include a due date.
 - Saving an edit writes the change directly to the private repository.
 - Drag a visible task onto another visible task to reorder it.
 - On touch devices, use **Move up** and **Move down**.
@@ -137,10 +140,17 @@ Use the **Add a task** form to provide:
 - optional notes
 - indoor/outdoor context
 - importance from 1 to 3
-- one or more mood tags
+- a single category, chosen from the category list in private `config.json`
+- an optional due date
 - an optional big-win flag
 
 New tasks are written directly to the private repository.
+
+## Categories
+
+- Category options are stored in the private repository's `data/config.json`.
+- Open the hamburger menu and use **Categories** to add or remove allowed values.
+- If you remove a category that is still used by tasks, the app clears that category from those tasks automatically while saving the updated config.
 
 ## Filters
 
@@ -148,7 +158,10 @@ The app supports:
 
 - indoor/outdoor context filtering
 - importance filtering
-- mood tag filtering
+- category filtering
+- configurable sorting by importance, created date, or due date ascending
+
+Tasks without a due date sort after tasks that do have one when **Due date ascending** is selected.
 
 Filters affect which tasks are shown in the current top-ten view. The private `todo-app` repository still keeps the full active task set in `data/tasks.json`.
 
@@ -156,11 +169,11 @@ Filters affect which tasks are shown in the current top-ten view. The private `t
 
 ### `data/config.json`
 
-Defines available moods and the top-ten cap:
+Defines available categories and the top-ten cap:
 
 ```json
 {
-  "moods": ["practical", "creative", "low-effort"],
+  "categories": ["practical", "creative", "low-effort"],
   "maxVisible": 10
 }
 ```
@@ -174,12 +187,15 @@ Stores the active task list in the private `todo-app` repository. Core fields ar
 - `notes`
 - `context`
 - `importance`
-- `mood`
+- `category`
+- `dueDate`
 - `bigWin`
 - `skipped`
+- `completed`
 - `createdAt`
+- `changedAt`
 
-The implementation also keeps `updatedAt` and `manualOrder` metadata so sync and manual reprioritization remain durable.
+The implementation also keeps `changedAt`, `updatedAt`, and `manualOrder` metadata so sync and manual reprioritization remain durable.
 
 ## License
 

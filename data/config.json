@@ -1,5 +1,4 @@
 {
-  "moods": ["practical", "creative", "low-effort"],
+  "categories": ["practical", "creative", "low-effort"],
   "maxVisible": 10
 }
-

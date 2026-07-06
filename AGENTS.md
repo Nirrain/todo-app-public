@@ -54,3 +54,5 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## General instructions 
+All significant changes should be documented in CHANGELOG.md with 1-3 lines. If an entry for todays date already exist add to that, otherwise make a new entry for today when the changes is done.

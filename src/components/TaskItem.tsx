@@ -5,7 +5,7 @@ interface TaskItemProps {
   task: Task;
   index: number;
   isDragging: boolean;
-  moods: string[];
+  categories: string[];
   disabled: boolean;
   onComplete: () => void;
   onSkip: () => void;
@@ -20,7 +20,8 @@ interface EditState {
   notes: string;
   context: TaskContext;
   importance: 1 | 2 | 3;
-  mood: string[];
+  category: string;
+  dueDate: string;
   bigWin: boolean;
 }
 
@@ -30,7 +31,8 @@ function toEditState(task: Task): EditState {
     notes: task.notes ?? "",
     context: task.context,
     importance: task.importance,
-    mood: [...task.mood],
+    category: task.category ?? "",
+    dueDate: task.dueDate ?? "",
     bigWin: task.bigWin,
   };
 }
@@ -39,7 +41,7 @@ export default function TaskItem({
   task,
   index,
   isDragging,
-  moods,
+  categories,
   disabled,
   onComplete,
   onSkip,
@@ -64,15 +66,6 @@ export default function TaskItem({
     }));
   }
 
-  function toggleMood(mood: string) {
-    setDraft((current) => ({
-      ...current,
-      mood: current.mood.includes(mood)
-        ? current.mood.filter((item) => item !== mood)
-        : [...current.mood, mood],
-    }));
-  }
-
   function handleSave() {
     if (!canSave) {
       return;
@@ -83,7 +76,8 @@ export default function TaskItem({
       notes: draft.notes.trim() || null,
       context: draft.context,
       importance: draft.importance,
-      mood: draft.mood,
+      category: draft.category || null,
+      dueDate: draft.dueDate || null,
       bigWin: draft.bigWin,
     });
     setIsEditing(false);
@@ -105,8 +99,10 @@ export default function TaskItem({
           <div className="task-meta">
             <span className="pill accent">{task.context}</span>
             <span className="pill">importance {task.importance}</span>
+            {task.dueDate ? <span className="pill">due {task.dueDate}</span> : null}
             {task.bigWin ? <span className="pill accent">big win</span> : null}
             {task.skipped ? <span className="pill warning">skipped</span> : null}
+            {task.completed ? <span className="pill warning">completed</span> : null}
             {task.manualOrder !== null ? <span className="pill">manual</span> : null}
           </div>
         </div>
@@ -114,13 +110,11 @@ export default function TaskItem({
 
       {!isEditing ? (
         <>
-          <div className="chip-row" style={{ marginTop: "0.75rem" }}>
-            {task.mood.map((mood) => (
-              <span key={mood} className="chip subtle">
-                {mood}
-              </span>
-            ))}
-          </div>
+          {task.category ? (
+            <div className="chip-row" style={{ marginTop: "0.45rem" }}>
+              <span className="chip subtle">{task.category}</span>
+            </div>
+          ) : null}
 
           {task.notes ? (
             <>
@@ -190,21 +184,30 @@ export default function TaskItem({
             </label>
           </div>
 
+          <label className="field-group">
+            <span>Due date</span>
+            <input
+              type="date"
+              value={draft.dueDate}
+              disabled={disabled}
+              onChange={(event) => updateField("dueDate", event.target.value)}
+            />
+          </label>
+
           <div className="field-group">
-            <span>Mood tags</span>
-            <div className="chip-row">
-              {moods.map((mood) => (
-                <button
-                  key={mood}
-                  type="button"
-                  disabled={disabled}
-                  className={`chip ${draft.mood.includes(mood) ? "active" : ""}`}
-                  onClick={() => toggleMood(mood)}
-                >
-                  {mood}
-                </button>
+            <span>Category</span>
+            <select
+              value={draft.category}
+              disabled={disabled}
+              onChange={(event) => updateField("category", event.target.value)}
+            >
+              <option value="">No category</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <label className="chip-row">
@@ -239,7 +242,7 @@ export default function TaskItem({
           {isEditing ? "Close edit" : "Edit"}
         </button>
         <button className="button compact-button" type="button" disabled={disabled} onClick={onComplete}>
-          Done
+          {task.completed ? "Undo done" : "Done"}
         </button>
         {task.skipped ? (
           <button className="button ghost compact-button" type="button" disabled={disabled} onClick={onUnskip}>

@@ -337,6 +337,12 @@ a {
   margin-top: 0.45rem;
 }
 
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
 .task-main {
   min-width: 0;
   flex: 1;
@@ -422,6 +428,37 @@ a {
   gap: 0.45rem;
   flex-wrap: wrap;
   margin-top: 0.55rem;
+}
+
+.utility-strip-top {
+  margin-top: 0;
+  margin-bottom: 0.55rem;
+}
+
+.submenu-strip,
+.inline-form,
+.category-row,
+.category-list {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.submenu-strip,
+.category-list {
+  flex-direction: column;
+}
+
+.inline-form {
+  align-items: center;
+}
+
+.inline-form input {
+  flex: 1;
+}
+
+.category-row {
+  justify-content: space-between;
+  align-items: center;
 }
 
 @media (max-width: 640px) {

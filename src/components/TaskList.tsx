@@ -5,8 +5,11 @@ import TaskItem from "./TaskItem";
 interface TaskListProps {
   tasks: Task[];
   maxVisible: number;
-  moods: string[];
+  totalCount: number;
+  categories: string[];
   disabled: boolean;
+  canLoadMore: boolean;
+  onLoadMore: () => void;
   onComplete: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onUnskip: (taskId: string) => void;
@@ -18,8 +21,11 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   maxVisible,
-  moods,
+  totalCount,
+  categories,
   disabled,
+  canLoadMore,
+  onLoadMore,
   onComplete,
   onSkip,
   onUnskip,
@@ -45,7 +51,7 @@ export default function TaskList({
       <div className="label-row">
         <h2 id="task-list-heading">Top 10</h2>
         <span className="small muted">
-          Showing {tasks.length} of {maxVisible}
+          Showing {tasks.length} of {totalCount}
         </span>
       </div>
 
@@ -68,7 +74,7 @@ export default function TaskList({
               task={task}
               index={index}
               isDragging={draggedId === task.id}
-              moods={moods}
+              categories={categories}
               disabled={disabled}
               onComplete={() => onComplete(task.id)}
               onSkip={() => onSkip(task.id)}
@@ -80,6 +86,19 @@ export default function TaskList({
           </li>
         ))}
       </ol>
+
+      {canLoadMore ? (
+        <div className="load-more-row">
+          <button
+            className="button secondary compact-button"
+            type="button"
+            disabled={disabled}
+            onClick={onLoadMore}
+          >
+            Load more
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -23,13 +23,30 @@ import type {
 const defaultFilters: TaskFilters = {
   context: "all",
   importance: "all",
-  moods: [],
+  category: "all",
+  sortMode: "importance",
 };
 
 const defaultConfig: AppConfig = {
-  moods: ["practical", "creative", "low-effort"],
+  categories: ["practical", "creative", "low-effort"],
   maxVisible: 10,
 };
+
+type SettingsView = "login" | "categories";
+
+interface RemoteState {
+  config: AppConfig;
+  tasks: Task[];
+  tasksSha: string;
+  configSha: string;
+}
+
+interface MutationResult {
+  tasks: Task[];
+  config: AppConfig;
+  writeTasks: boolean;
+  writeConfig: boolean;
+}
 
 function getNow(): string {
   return new Date().toISOString();
@@ -37,6 +54,18 @@ function getNow(): string {
 
 function getIsOnline(): boolean {
   return typeof navigator === "undefined" ? true : navigator.onLine;
+}
+
+function normalizeConfig(config: Partial<AppConfig> & { moods?: string[] }): AppConfig {
+  return {
+    categories: Array.isArray(config.categories)
+      ? config.categories
+      : Array.isArray(config.moods)
+        ? config.moods
+        : defaultConfig.categories,
+    maxVisible:
+      typeof config.maxVisible === "number" ? config.maxVisible : defaultConfig.maxVisible,
+  };
 }
 
 async function fetchStaticJson<T>(path: string): Promise<T> {
@@ -102,6 +131,7 @@ export default function App() {
   const [config, setConfig] = useState<AppConfig>(defaultConfig);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
+  const [visibleCount, setVisibleCount] = useState(defaultConfig.maxVisible);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
     message: "Loading Top 10 Tasks.",
@@ -109,22 +139,20 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(buildInitialSyncSettings);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState<SettingsView>("login");
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
 
   const syncInFlightRef = useRef(false);
 
-  const allRankedTasks = useMemo(
-    () => sortTasks(tasks, defaultFilters, config),
-    [config, tasks],
-  );
   const rankedTasks = useMemo(
     () => sortTasks(tasks, filters, config),
     [config, filters, tasks],
   );
   const visibleTasks = useMemo(
-    () => rankedTasks.slice(0, config.maxVisible || 10),
-    [config.maxVisible, rankedTasks],
+    () => rankedTasks.slice(0, visibleCount),
+    [rankedTasks, visibleCount],
   );
   const hasManualOrder = useMemo(
     () => tasks.some((task) => Number.isInteger(task.manualOrder)),
@@ -137,12 +165,25 @@ export default function App() {
   }, [syncSettings]);
 
   useEffect(() => {
+    if (filters.category !== "all" && !config.categories.includes(filters.category)) {
+      setFilters((current) => ({
+        ...current,
+        category: "all",
+      }));
+    }
+  }, [config.categories, filters.category]);
+
+  useEffect(() => {
+    setVisibleCount(config.maxVisible);
+  }, [config.maxVisible, filters, tasks]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function initialize() {
       try {
-        const [staticConfig, staticTasks] = await Promise.all([
-          fetchStaticJson<AppConfig>("data/config.json"),
+        const [staticConfigFile, staticTasks] = await Promise.all([
+          fetchStaticJson<Partial<AppConfig> & { moods?: string[] }>("data/config.json"),
           fetchStaticJson<TasksFile>("data/tasks.json"),
         ]);
 
@@ -150,6 +191,7 @@ export default function App() {
           return;
         }
 
+        const staticConfig = normalizeConfig(staticConfigFile);
         const fallbackTasks = reflowTasks(staticTasks.tasks ?? [], {
           config: staticConfig,
         });
@@ -165,7 +207,7 @@ export default function App() {
         setStatus({
           tone: "info",
           message: getIsOnline()
-            ? "Open Settings and add a GitHub token to work against the private repository."
+            ? "Open Login in Settings and add a GitHub token to work against the private repository."
             : "Offline. Showing bundled fallback tasks only.",
         });
       } catch (error) {
@@ -223,21 +265,21 @@ export default function App() {
     };
   }, [syncSettings]);
 
-  async function fetchRemoteState() {
+  async function fetchRemoteState(): Promise<RemoteState> {
     const [remoteTasksFile, remoteConfigFile] = await Promise.all([
       fetchRepositoryJsonFile<TasksFile>(
         syncSettings,
         syncSettings.tasksPath,
         syncSettings.token,
       ),
-      fetchRepositoryJsonFile<AppConfig>(
+      fetchRepositoryJsonFile<Partial<AppConfig> & { moods?: string[] }>(
         syncSettings,
         syncSettings.configPath,
         syncSettings.token,
       ),
     ]);
 
-    const remoteConfig = remoteConfigFile.content;
+    const remoteConfig = normalizeConfig(remoteConfigFile.content);
     const remoteTasks = reflowTasks(remoteTasksFile.content.tasks ?? [], {
       config: remoteConfig,
     });
@@ -245,7 +287,8 @@ export default function App() {
     return {
       config: remoteConfig,
       tasks: remoteTasks,
-      sha: remoteTasksFile.sha,
+      tasksSha: remoteTasksFile.sha,
+      configSha: remoteConfigFile.sha,
     };
   }
 
@@ -261,18 +304,12 @@ export default function App() {
       const remoteState = await fetchRemoteState();
       setConfig(remoteState.config);
       setTasks(remoteState.tasks);
-
-      if (showSuccessMessage) {
-        setStatus({
-          tone: "success",
-          message: "Private repository refreshed.",
-        });
-      } else {
-        setStatus({
-          tone: "info",
-          message: "Showing live data from the private repository.",
-        });
-      }
+      setStatus({
+        tone: showSuccessMessage ? "success" : "info",
+        message: showSuccessMessage
+          ? "Private repository refreshed."
+          : "Showing live data from the private repository.",
+      });
     } catch (error) {
       setStatus({
         tone: "error",
@@ -284,8 +321,8 @@ export default function App() {
     }
   }
 
-  async function runRemoteTaskMutation(
-    buildNextTasks: (remoteTasks: Task[], remoteConfig: AppConfig) => Task[],
+  async function runRemoteMutation(
+    buildMutation: (remoteTasks: Task[], remoteConfig: AppConfig) => MutationResult,
     successMessage: string,
   ) {
     if (syncInFlightRef.current) {
@@ -295,7 +332,7 @@ export default function App() {
     if (!hasRepoSettings(syncSettings)) {
       setStatus({
         tone: "error",
-        message: "Open Settings and set the private data repository owner, name, and branch.",
+        message: "Open Login in Settings and set the private data repository owner, name, and branch.",
       });
       return;
     }
@@ -303,7 +340,7 @@ export default function App() {
     if (!syncSettings.token) {
       setStatus({
         tone: "error",
-        message: "Open Settings and add a GitHub token before making task changes.",
+        message: "Open Login in Settings and add a GitHub token before making changes.",
       });
       return;
     }
@@ -329,21 +366,33 @@ export default function App() {
       for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
           const remoteState = await fetchRemoteState();
-          const nextTasks = reflowTasks(
-            buildNextTasks(remoteState.tasks, remoteState.config),
-            { config: remoteState.config },
-          );
+          const mutation = buildMutation(remoteState.tasks, remoteState.config);
+          const nextConfig = normalizeConfig(mutation.config);
+          const nextTasks = reflowTasks(mutation.tasks, { config: nextConfig });
 
-          await updateRepositoryJsonFile(
-            syncSettings,
-            syncSettings.tasksPath,
-            { tasks: nextTasks },
-            remoteState.sha,
-            syncSettings.token,
-            "Sync tasks from PWA",
-          );
+          if (mutation.writeTasks) {
+            await updateRepositoryJsonFile(
+              syncSettings,
+              syncSettings.tasksPath,
+              { tasks: nextTasks },
+              remoteState.tasksSha,
+              syncSettings.token,
+              "Sync tasks from PWA",
+            );
+          }
 
-          setConfig(remoteState.config);
+          if (mutation.writeConfig) {
+            await updateRepositoryJsonFile(
+              syncSettings,
+              syncSettings.configPath,
+              nextConfig,
+              remoteState.configSha,
+              syncSettings.token,
+              "Update config from PWA",
+            );
+          }
+
+          setConfig(nextConfig);
           setTasks(nextTasks);
           setStatus({
             tone: "success",
@@ -370,7 +419,7 @@ export default function App() {
           setConfig(remoteState.config);
           setTasks(remoteState.tasks);
         } catch {
-          // Preserve the original conflict error if the follow-up refresh also fails.
+          // Preserve the original conflict error if refresh fails too.
         }
       }
 
@@ -392,66 +441,100 @@ export default function App() {
       id: crypto.randomUUID(),
       ...draft,
       skipped: false,
+      completed: false,
       createdAt: now,
+      changedAt: now,
       updatedAt: now,
       manualOrder: null,
     };
 
-    void runRemoteTaskMutation(
-      (remoteTasks) => [...remoteTasks, task],
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: [...remoteTasks, task],
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
       "Task saved to the private repository.",
     );
   }
 
   function handleEditTask(taskId: string, draft: TaskDraft) {
-    void runRemoteTaskMutation(
-      (remoteTasks) =>
-        remoteTasks.map((task) =>
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: remoteTasks.map((task) =>
           task.id === taskId
             ? {
                 ...task,
                 ...draft,
+                changedAt: getNow(),
                 updatedAt: getNow(),
               }
             : task,
         ),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
       "Task changes saved to the private repository.",
     );
   }
 
   function handleComplete(taskId: string) {
-    void runRemoteTaskMutation(
-      (remoteTasks) => remoteTasks.filter((task) => task.id !== taskId),
-      "Task completed and saved.",
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: remoteTasks.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                completed: !task.completed,
+                changedAt: getNow(),
+                updatedAt: getNow(),
+              }
+            : task,
+        ),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
+      "Task completion saved.",
     );
   }
 
   function handleSkip(taskId: string) {
-    void runRemoteTaskMutation(
-      (remoteTasks) =>
-        remoteTasks.map((task) =>
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: remoteTasks.map((task) =>
           task.id === taskId
-            ? { ...task, skipped: true, updatedAt: getNow() }
+            ? { ...task, skipped: true, changedAt: getNow(), updatedAt: getNow() }
             : task,
         ),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
       "Task skipped and saved.",
     );
   }
 
   function handleUnskip(taskId: string) {
-    void runRemoteTaskMutation(
-      (remoteTasks) =>
-        remoteTasks.map((task) =>
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: remoteTasks.map((task) =>
           task.id === taskId
-            ? { ...task, skipped: false, updatedAt: getNow() }
+            ? { ...task, skipped: false, changedAt: getNow(), updatedAt: getNow() }
             : task,
         ),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
       "Skip reset and saved.",
     );
   }
 
   function handleMoveTask(fromId: string, toId: string) {
-    void runRemoteTaskMutation((remoteTasks, remoteConfig) => {
+    void runRemoteMutation((remoteTasks, remoteConfig) => {
       const remoteVisible = sortTasks(remoteTasks, filters, remoteConfig).slice(
         0,
         remoteConfig.maxVisible,
@@ -461,7 +544,12 @@ export default function App() {
       const toIndex = remoteVisible.findIndex((task) => task.id === toId);
 
       if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-        return remoteTasks;
+        return {
+          tasks: remoteTasks,
+          config: remoteConfig,
+          writeTasks: false,
+          writeConfig: false,
+        };
       }
 
       const nextVisible = [...remoteVisible];
@@ -472,7 +560,12 @@ export default function App() {
         (task) => !remoteVisibleIds.has(task.id),
       );
 
-      return applyManualOrder([...nextVisible, ...remainder]);
+      return {
+        tasks: applyManualOrder([...nextVisible, ...remainder]),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      };
     }, "Manual order saved.");
   }
 
@@ -488,10 +581,67 @@ export default function App() {
   }
 
   function handleClearManualOrder() {
-    void runRemoteTaskMutation(
-      (remoteTasks, remoteConfig) =>
-        reflowTasks(clearManualOrder(remoteTasks), { config: remoteConfig }),
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: reflowTasks(clearManualOrder(remoteTasks), { config: remoteConfig }),
+        config: remoteConfig,
+        writeTasks: true,
+        writeConfig: false,
+      }),
       "Automatic ordering restored.",
+    );
+  }
+
+  function handleAddCategory() {
+    const trimmed = newCategory.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => {
+        if (remoteConfig.categories.includes(trimmed)) {
+          return {
+            tasks: remoteTasks,
+            config: remoteConfig,
+            writeTasks: false,
+            writeConfig: false,
+          };
+        }
+
+        return {
+          tasks: remoteTasks,
+          config: {
+            ...remoteConfig,
+            categories: [...remoteConfig.categories, trimmed],
+          },
+          writeTasks: false,
+          writeConfig: true,
+        };
+      },
+      "Category list saved.",
+    );
+
+    setNewCategory("");
+  }
+
+  function handleDeleteCategory(category: string) {
+    void runRemoteMutation(
+      (remoteTasks, remoteConfig) => ({
+        tasks: remoteTasks.map((task) =>
+          task.category === category
+            ? { ...task, category: null, changedAt: getNow(), updatedAt: getNow() }
+            : task,
+        ),
+        config: {
+          ...remoteConfig,
+          categories: remoteConfig.categories.filter((item) => item !== category),
+        },
+        writeTasks: true,
+        writeConfig: true,
+      }),
+      "Category removed and affected tasks cleared.",
     );
   }
 
@@ -522,6 +672,23 @@ export default function App() {
 
       <div className={`status-banner ${status.tone} compact-status`}>{status.message}</div>
 
+      <section className="utility-strip utility-strip-top">
+        <button
+          className="button secondary compact-button"
+          type="button"
+          onClick={() => setIsFiltersOpen((current) => !current)}
+        >
+          {isFiltersOpen ? "Hide filters" : "Filters"}
+        </button>
+        <button
+          className="button secondary compact-button"
+          type="button"
+          onClick={() => setIsComposerOpen((current) => !current)}
+        >
+          {isComposerOpen ? "Hide new task" : "New task"}
+        </button>
+      </section>
+
       {isSettingsOpen ? (
         <section className="panel settings-panel" aria-labelledby="settings-heading">
           <div className="label-row">
@@ -535,117 +702,147 @@ export default function App() {
             </button>
           </div>
 
-          <div className="token-grid">
-            <label className="field-group">
-              <span>Data repository owner</span>
-              <input
-                type="text"
-                value={syncSettings.owner}
-                onChange={(event) =>
-                  setSyncSettings((current) => ({
-                    ...current,
-                    owner: event.target.value.trim(),
-                  }))
-                }
-              />
-            </label>
-
-            <label className="field-group">
-              <span>Private data repository</span>
-              <input
-                type="text"
-                value={syncSettings.repo}
-                placeholder="todo-app"
-                onChange={(event) =>
-                  setSyncSettings((current) => ({
-                    ...current,
-                    repo: event.target.value.trim(),
-                  }))
-                }
-              />
-            </label>
-
-            <label className="field-group">
-              <span>Branch</span>
-              <input
-                type="text"
-                value={syncSettings.branch}
-                onChange={(event) =>
-                  setSyncSettings((current) => ({
-                    ...current,
-                    branch: event.target.value.trim(),
-                  }))
-                }
-              />
-            </label>
-
-            <label className="field-group">
-              <span>GitHub token</span>
-              <input
-                type="password"
-                value={syncSettings.token}
-                placeholder="Stored in this browser only"
-                onChange={(event) =>
-                  setSyncSettings((current) => ({
-                    ...current,
-                    token: event.target.value.trim(),
-                  }))
-                }
-              />
-            </label>
-          </div>
-
-          <div className="action-row">
+          <div className="submenu-strip">
             <button
-              className="button compact-button"
+              className={`button compact-button ${settingsView === "login" ? "" : "secondary"}`}
               type="button"
-              disabled={isSyncing || !canSync(syncSettings)}
-              onClick={() => void refreshFromRemote(true)}
+              onClick={() => setSettingsView("login")}
             >
-              Refresh
+              Login
             </button>
-            <span className="small muted">
-              Reads and writes <code>{syncSettings.tasksPath}</code> in
-              <code> {syncSettings.repo}</code>.
-            </span>
+            <button
+              className={`button compact-button ${settingsView === "categories" ? "" : "secondary"}`}
+              type="button"
+              onClick={() => setSettingsView("categories")}
+            >
+              Categories
+            </button>
           </div>
+
+          {settingsView === "login" ? (
+            <>
+              <div className="token-grid">
+                <label className="field-group">
+                  <span>Data repository owner</span>
+                  <input
+                    type="text"
+                    value={syncSettings.owner}
+                    onChange={(event) =>
+                      setSyncSettings((current) => ({
+                        ...current,
+                        owner: event.target.value.trim(),
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="field-group">
+                  <span>Private data repository</span>
+                  <input
+                    type="text"
+                    value={syncSettings.repo}
+                    placeholder="todo-app"
+                    onChange={(event) =>
+                      setSyncSettings((current) => ({
+                        ...current,
+                        repo: event.target.value.trim(),
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="field-group">
+                  <span>Branch</span>
+                  <input
+                    type="text"
+                    value={syncSettings.branch}
+                    onChange={(event) =>
+                      setSyncSettings((current) => ({
+                        ...current,
+                        branch: event.target.value.trim(),
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="field-group">
+                  <span>GitHub token</span>
+                  <input
+                    type="password"
+                    value={syncSettings.token}
+                    placeholder="Stored in this browser only"
+                    onChange={(event) =>
+                      setSyncSettings((current) => ({
+                        ...current,
+                        token: event.target.value.trim(),
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="action-row">
+                <button
+                  className="button compact-button"
+                  type="button"
+                  disabled={isSyncing || !canSync(syncSettings)}
+                  onClick={() => void refreshFromRemote(true)}
+                >
+                  Refresh
+                </button>
+                <span className="small muted">
+                  Reads and writes <code>{syncSettings.tasksPath}</code> in
+                  <code> {syncSettings.repo}</code>.
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="section-stack">
+              <div className="field-group">
+                <span>New category</span>
+                <div className="inline-form">
+                  <input
+                    type="text"
+                    value={newCategory}
+                    disabled={!canMutate}
+                    placeholder="Add a category"
+                    onChange={(event) => setNewCategory(event.target.value)}
+                  />
+                  <button
+                    className="button compact-button"
+                    type="button"
+                    disabled={!canMutate || !newCategory.trim()}
+                    onClick={handleAddCategory}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="category-list">
+                {config.categories.map((category) => (
+                  <div key={category} className="category-row">
+                    <span className="chip subtle">{category}</span>
+                    <button
+                      className="button ghost compact-button"
+                      type="button"
+                      disabled={!canMutate}
+                      onClick={() => handleDeleteCategory(category)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       ) : null}
-
-      <TaskList
-        tasks={visibleTasks}
-        maxVisible={config.maxVisible}
-        moods={config.moods}
-        disabled={!canMutate}
-        onComplete={handleComplete}
-        onSkip={handleSkip}
-        onUnskip={handleUnskip}
-        onMoveTask={handleMoveTask}
-        onMoveDirection={handleMoveDirection}
-        onSaveEdit={handleEditTask}
-      />
-
-      <section className="utility-strip">
-        <button
-          className="button secondary compact-button"
-          type="button"
-          onClick={() => setIsComposerOpen((current) => !current)}
-        >
-          {isComposerOpen ? "Hide add" : "New task"}
-        </button>
-        <button
-          className="button secondary compact-button"
-          type="button"
-          onClick={() => setIsFiltersOpen((current) => !current)}
-        >
-          {isFiltersOpen ? "Hide filters" : "Filters"}
-        </button>
-      </section>
 
       {isFiltersOpen ? (
         <Filters
           filters={filters}
-          moods={config.moods}
+          categories={config.categories}
           hasManualOrder={hasManualOrder}
           disabled={isSyncing}
           onChange={setFilters}
@@ -656,11 +853,29 @@ export default function App() {
 
       {isComposerOpen ? (
         <AddTaskForm
-          moods={config.moods}
+          categories={config.categories}
           disabled={!canMutate}
           onAddTask={handleAddTask}
         />
       ) : null}
+
+      <TaskList
+        tasks={visibleTasks}
+        maxVisible={config.maxVisible}
+        totalCount={rankedTasks.length}
+        categories={config.categories}
+        disabled={!canMutate}
+        canLoadMore={visibleTasks.length < rankedTasks.length}
+        onLoadMore={() =>
+          setVisibleCount((current) => current + config.maxVisible)
+        }
+        onComplete={handleComplete}
+        onSkip={handleSkip}
+        onUnskip={handleUnskip}
+        onMoveTask={handleMoveTask}
+        onMoveDirection={handleMoveDirection}
+        onSaveEdit={handleEditTask}
+      />
     </main>
   );
 }

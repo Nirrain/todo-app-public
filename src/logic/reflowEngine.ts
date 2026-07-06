@@ -24,7 +24,12 @@ export function clearManualOrder(tasks: Task[]): Task[] {
 
 export function reflowTasks(tasks: Task[], options: ReflowOptions): Task[] {
   const filters =
-    options.filters ?? { context: "all", importance: "all", moods: [] };
+    options.filters ?? {
+      context: "all",
+      importance: "all",
+      category: "all",
+      sortMode: "importance",
+    };
   const ordered = sortTasks(tasks, filters, options.config).map(normalizeTask);
   const manualTasks = ordered.filter(hasManualOrder);
 
@@ -44,4 +49,3 @@ export function reflowTasks(tasks: Task[], options: ReflowOptions): Task[] {
     manualOrder: manualIndexById.get(task.id) ?? null,
   }));
 }
-

@@ -6,10 +6,13 @@ export interface Task {
   notes: string | null;
   context: TaskContext;
   importance: 1 | 2 | 3;
-  mood: string[];
+  category: string | null;
   bigWin: boolean;
   skipped: boolean;
+  completed: boolean;
   createdAt: string;
+  dueDate?: string | null;
+  changedAt?: string;
   updatedAt?: string;
   manualOrder: number | null;
 }
@@ -19,19 +22,21 @@ export interface TaskDraft {
   notes: string | null;
   context: TaskContext;
   importance: 1 | 2 | 3;
-  mood: string[];
+  category: string | null;
+  dueDate: string | null;
   bigWin: boolean;
 }
 
 export interface AppConfig {
-  moods: string[];
+  categories: string[];
   maxVisible: number;
 }
 
 export interface TaskFilters {
   context: TaskContext | "all";
   importance: "all" | "1" | "2" | "3";
-  moods: string[];
+  category: string | "all";
+  sortMode: "importance" | "createdAt" | "dueDate";
 }
 
 export interface SyncSettings {
@@ -56,9 +61,3 @@ export interface RepositoryJsonFile<T> {
 export interface TasksFile {
   tasks: Task[];
 }
-
-export type PendingChange =
-  | { type: "replaceAll"; tasks: Task[]; changedAt?: string }
-  | { type: "upsert"; task: Task; changedAt?: string }
-  | { type: "delete"; taskId: string; changedAt?: string };
-

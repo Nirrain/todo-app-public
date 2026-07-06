@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import type { TaskContext, TaskDraft } from "../types";
 
 interface AddTaskFormProps {
-  moods: string[];
+  categories: string[];
   disabled: boolean;
   onAddTask: (draft: TaskDraft) => void;
 }
@@ -12,7 +12,8 @@ interface DraftState {
   notes: string;
   context: TaskContext;
   importance: 1 | 2 | 3;
-  moods: string[];
+  category: string;
+  dueDate: string;
   bigWin: boolean;
 }
 
@@ -21,11 +22,12 @@ const defaultTask: DraftState = {
   notes: "",
   context: "indoor",
   importance: 2,
-  moods: [],
+  category: "",
+  dueDate: "",
   bigWin: false,
 };
 
-export default function AddTaskForm({ moods, disabled, onAddTask }: AddTaskFormProps) {
+export default function AddTaskForm({ categories, disabled, onAddTask }: AddTaskFormProps) {
   const [draft, setDraft] = useState<DraftState>(defaultTask);
   const canSubmit = useMemo(() => draft.title.trim().length > 0, [draft.title]);
 
@@ -33,15 +35,6 @@ export default function AddTaskForm({ moods, disabled, onAddTask }: AddTaskFormP
     setDraft((current) => ({
       ...current,
       [field]: value,
-    }));
-  }
-
-  function toggleMood(mood: string) {
-    setDraft((current) => ({
-      ...current,
-      moods: current.moods.includes(mood)
-        ? current.moods.filter((item) => item !== mood)
-        : [...current.moods, mood],
     }));
   }
 
@@ -57,7 +50,8 @@ export default function AddTaskForm({ moods, disabled, onAddTask }: AddTaskFormP
       notes: draft.notes.trim() || null,
       context: draft.context,
       importance: draft.importance,
-      mood: draft.moods,
+      category: draft.category || null,
+      dueDate: draft.dueDate || null,
       bigWin: draft.bigWin,
     });
 
@@ -121,21 +115,30 @@ export default function AddTaskForm({ moods, disabled, onAddTask }: AddTaskFormP
           </label>
         </div>
 
+        <label className="field-group">
+          <span>Due date</span>
+          <input
+            type="date"
+            value={draft.dueDate}
+            disabled={disabled}
+            onChange={(event) => updateField("dueDate", event.target.value)}
+          />
+        </label>
+
         <div className="field-group">
-          <span>Mood tags</span>
-          <div className="chip-row">
-            {moods.map((mood) => (
-              <button
-                key={mood}
-                className={`chip ${draft.moods.includes(mood) ? "active" : ""}`}
-                type="button"
-                disabled={disabled}
-                onClick={() => toggleMood(mood)}
-              >
-                {mood}
-              </button>
+          <span>Category</span>
+          <select
+            value={draft.category}
+            disabled={disabled}
+            onChange={(event) => updateField("category", event.target.value)}
+          >
+            <option value="">No category</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         <label className="chip-row">
