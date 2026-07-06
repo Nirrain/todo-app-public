@@ -13,6 +13,29 @@
       name="description"
       content="A GitHub-native PWA task manager with offline support and repository-backed sync."
     />
+    <style>
+      #root {
+        min-height: 100vh;
+      }
+
+      .boot-message {
+        max-width: 42rem;
+        margin: 2rem auto;
+        padding: 1rem 1.25rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 1rem;
+        background: #ffffff;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+        font:
+          16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      .boot-message code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+    </style>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -20,7 +43,20 @@
     <title>Top 10 Tasks</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-message">
+        <strong>Loading Top 10 Tasks...</strong>
+        <p>
+          If this message stays visible on GitHub Pages, the site is being served from the
+          repository source instead of the workflow-built artifact.
+        </p>
+        <p>
+          Fix: in <strong>Settings → Pages</strong>, set <strong>Build and deployment</strong>
+          to <strong>GitHub Actions</strong> for <code>todo-app-public</code>, then rerun the
+          <strong>Deploy Pages</strong> workflow.
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

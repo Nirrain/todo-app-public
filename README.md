@@ -65,6 +65,8 @@ npm run dev
 
 After deployment, the app is available on the GitHub Pages URL for `todo-app-public`.
 
+> **Important:** the workflow alone is not enough if Pages is still configured as **Deploy from branch**. If the deployed URL shows a blank page or a loading notice forever, check **Settings → Pages** and switch the site to **GitHub Actions**. A legacy Pages configuration will serve the raw repository `index.html` instead of the built `dist/` artifact.
+
 ## Installing the PWA on iPhone
 
 1. Open the deployed GitHub Pages URL in Safari.
