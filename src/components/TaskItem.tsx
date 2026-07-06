@@ -22,7 +22,6 @@ interface EditState {
   importance: 1 | 2 | 3;
   category: string;
   dueDate: string;
-  bigWin: boolean;
 }
 
 function toEditState(task: Task): EditState {
@@ -33,7 +32,6 @@ function toEditState(task: Task): EditState {
     importance: task.importance,
     category: task.category ?? "",
     dueDate: task.dueDate ?? "",
-    bigWin: task.bigWin,
   };
 }
 
@@ -78,7 +76,6 @@ export default function TaskItem({
       importance: draft.importance,
       category: draft.category || null,
       dueDate: draft.dueDate || null,
-      bigWin: draft.bigWin,
     });
     setIsEditing(false);
   }
@@ -100,7 +97,6 @@ export default function TaskItem({
             <span className="pill accent">{task.context}</span>
             <span className="pill">importance {task.importance}</span>
             {task.dueDate ? <span className="pill">due {task.dueDate}</span> : null}
-            {task.bigWin ? <span className="pill accent">big win</span> : null}
             {task.skipped ? <span className="pill warning">skipped</span> : null}
             {task.completed ? <span className="pill warning">completed</span> : null}
             {task.manualOrder !== null ? <span className="pill">manual</span> : null}
@@ -209,16 +205,6 @@ export default function TaskItem({
               ))}
             </select>
           </div>
-
-          <label className="chip-row">
-            <input
-              type="checkbox"
-              checked={draft.bigWin}
-              disabled={disabled}
-              onChange={(event) => updateField("bigWin", event.target.checked)}
-            />
-            <span>Big win</span>
-          </label>
 
           <div className="action-row">
             <button className="button compact-button" type="button" disabled={!canSave || disabled} onClick={handleSave}>

@@ -18,7 +18,6 @@ export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title" | 
       task.category ?? (Array.isArray(legacyMood) && legacyMood.length > 0 ? legacyMood[0] : null),
     skipped: Boolean(task.skipped),
     completed: Boolean(task.completed),
-    bigWin: Boolean(task.bigWin),
     dueDate: task.dueDate ?? null,
     changedAt: task.changedAt ?? task.updatedAt ?? task.createdAt,
     manualOrder,
@@ -26,35 +25,29 @@ export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title" | 
 }
 
 export function matchesFilters(task: Task, filters: TaskFilters): boolean {
-  if (filters.context !== "all" && task.context !== filters.context) {
+  if (filters.contexts !== null && !filters.contexts.includes(task.context)) {
     return false;
   }
 
-  if (filters.importance !== "all" && task.importance !== Number(filters.importance)) {
+  if (filters.categories !== null && !filters.categories.includes(task.category ?? "")) {
     return false;
   }
 
-  if (filters.category !== "all" && task.category !== filters.category) {
+  const query = filters.query.trim().toLowerCase();
+  if (!query) {
+    return true;
+  }
+
+  const haystack = [task.title, task.notes ?? "", task.category ?? ""].join("\n").toLowerCase();
+  if (!haystack.includes(query)) {
     return false;
   }
 
   return true;
 }
 
-export function scoreTask(task: Task, filters: TaskFilters): number {
+export function scoreTask(task: Task): number {
   let score = task.importance * 100;
-
-  if (filters.context !== "all" && task.context === filters.context) {
-    score += 40;
-  }
-
-  if (filters.category !== "all" && task.category === filters.category) {
-    score += 24;
-  }
-
-  if (task.bigWin) {
-    score += 26;
-  }
 
   if (task.skipped) {
     score -= 90;
@@ -98,7 +91,7 @@ export function sortTasks(
         }
       }
 
-      const scoreDifference = scoreTask(right, filters) - scoreTask(left, filters);
+      const scoreDifference = scoreTask(right) - scoreTask(left);
       if (scoreDifference !== 0) {
         return scoreDifference;
       }

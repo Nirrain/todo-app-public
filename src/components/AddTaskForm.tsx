@@ -14,7 +14,6 @@ interface DraftState {
   importance: 1 | 2 | 3;
   category: string;
   dueDate: string;
-  bigWin: boolean;
 }
 
 const defaultTask: DraftState = {
@@ -24,7 +23,6 @@ const defaultTask: DraftState = {
   importance: 2,
   category: "",
   dueDate: "",
-  bigWin: false,
 };
 
 export default function AddTaskForm({ categories, disabled, onAddTask }: AddTaskFormProps) {
@@ -52,7 +50,6 @@ export default function AddTaskForm({ categories, disabled, onAddTask }: AddTask
       importance: draft.importance,
       category: draft.category || null,
       dueDate: draft.dueDate || null,
-      bigWin: draft.bigWin,
     });
 
     setDraft(defaultTask);
@@ -140,16 +137,6 @@ export default function AddTaskForm({ categories, disabled, onAddTask }: AddTask
             ))}
           </select>
         </div>
-
-        <label className="chip-row">
-          <input
-            type="checkbox"
-            checked={draft.bigWin}
-            disabled={disabled}
-            onChange={(event) => updateField("bigWin", event.target.checked)}
-          />
-          <span>Mark as a big win</span>
-        </label>
 
         <button className="button compact-button" type="submit" disabled={!canSubmit || disabled}>
           Add task

@@ -404,6 +404,89 @@ a {
   align-items: center;
 }
 
+.filter-block {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.toggle-chip {
+  font-weight: 600;
+}
+
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.search-field {
+  min-width: 0;
+}
+
+.sort-control {
+  position: relative;
+}
+
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sort-icon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.14rem;
+}
+
+.sort-line {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.sort-line.short {
+  width: 0.5rem;
+}
+
+.sort-line.medium {
+  width: 0.8rem;
+}
+
+.sort-line.long {
+  width: 1.1rem;
+}
+
+.sort-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 10;
+  min-width: 9.5rem;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
 .small {
   font-size: 0.78rem;
 }
@@ -421,6 +504,10 @@ a {
 
 .settings-panel {
   margin-bottom: 0.6rem;
+}
+
+.settings-empty {
+  margin-top: 0.65rem;
 }
 
 .utility-strip {
@@ -478,5 +565,9 @@ a {
 
   .topbar-copy h1 {
     font-size: 1.2rem;
+  }
+
+  .filter-toolbar {
+    grid-template-columns: 1fr;
   }
 }

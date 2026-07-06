@@ -8,7 +8,7 @@ The application shall be deployable and usable using only standard GitHub functi
 
 ## 2. Users and Operating Context
 
-The primary user is an individual managing personal tasks from an iPhone. The application shall support quick review and adjustment of tasks based on current context, energy, mood, and importance. The expected usage pattern is frequent lightweight interaction rather than complex project management.
+The primary user is an individual managing personal tasks from an iPhone. The application shall support quick review and adjustment of tasks based on current context, category, and importance. The expected usage pattern is frequent lightweight interaction rather than complex project management.
 
 The application shall support installation as a PWA on iPhone through the browser's standard "Add to Home Screen" functionality. Once installed, it shall behave like a simple standalone mobile app. It shall remain usable when offline by loading cached static assets and locally cached task data. When connectivity is available, it shall synchronize task data with the GitHub repository.
 
@@ -38,12 +38,13 @@ Each task shall contain:
 | `notes` | Optional longer notes, stored as a string or `null`. |
 | `context` | Required value of `indoor` or `outdoor`. |
 | `importance` | Required numeric value from 1 to 3. |
-| `mood` | Array of mood tags, such as `practical`, `creative`, or `low-effort`. |
-| `bigWin` | Boolean indicating whether the task has high payoff. |
+| `category` | Optional single category value, such as `practical`, `creative`, or `low-effort`. |
 | `skipped` | Boolean indicating whether the user has skipped the task. |
+| `completed` | Boolean indicating whether the task is marked complete. |
 | `createdAt` | ISO timestamp representing task creation time. |
+| `changedAt` | ISO timestamp representing the last meaningful task change. |
 
-The configuration file shall define available mood tags and the maximum number of visible tasks. The default maximum visible task count shall be ten.
+The configuration file shall define available categories and the maximum number of visible tasks. The default maximum visible task count shall be ten.
 
 ## 5. Task List and Prioritization Requirements
 
@@ -53,10 +54,8 @@ The priority engine shall rank tasks using at least the following factors:
 
 1. Current indoor or outdoor context.
 2. Task importance from 1 to 3.
-3. Mood alignment with selected mood filters.
-4. Big-win bias.
-5. Manual reprioritization overrides.
-6. The configured maximum visible count.
+3. Manual reprioritization overrides.
+4. The configured maximum visible count.
 
 Manual reprioritization shall allow the user to reorder tasks, including by drag-to-reorder or an equivalent mobile-friendly interaction. Manual ordering shall influence the ranked result while preserving the ability to return to automated prioritization when manual overrides are removed.
 
@@ -68,22 +67,23 @@ The application shall allow the user to add a task using a compact form. The for
 2. Optional notes.
 3. Indoor or outdoor context selection.
 4. Importance selection from 1 to 3.
-5. Mood tag selection.
-6. Big-win toggle.
+5. Optional category selection.
+6. Optional due date.
 
-The application shall allow the user to complete a task. Completed tasks shall be removed from the active task list or otherwise excluded from the top-ten active view according to the app's stored task handling.
+The application shall allow the user to complete a task. Completed tasks shall remain stored with a completion flag and may still appear in the task list according to current sorting and filters.
 
 The application shall allow the user to skip a task. Skipped tasks shall not be deleted. A skipped task shall be deprioritized during reflow but shall remain in stored data and may reappear later if its ranking places it in the top ten. Skipping shall trigger a task reflow.
 
-The application shall allow task notes to be expanded and collapsed from each task item. Task list items shall show the task title, context, importance, mood tags, and actions for completion and skipping.
+The application shall allow task notes to be expanded and collapsed from each task item. Task list items shall show the task title, context, importance, category, and actions for completion and skipping.
 
 ## 7. Filtering Requirements
 
 The application shall provide filters for:
 
-1. Indoor or outdoor context.
-2. Importance.
-3. Mood.
+1. Indoor and outdoor context as independent toggles.
+2. Category on/off toggles for each configured category.
+3. Free-text filtering.
+4. Sort mode selection for importance, created date, and due date ascending.
 
 Filtering shall affect the visible ranked task list. The filter controls shall be usable on iPhone-sized screens and shall not require desktop-only interactions. Filters shall work with offline cached data as well as synchronized remote data.
 
@@ -106,7 +106,7 @@ A GitHub Actions workflow shall also support reflow outside the browser. The wor
 
 The application shall function offline after initial load or installation as a PWA. The service worker shall cache static assets required to open and use the app. It shall also support cached access to task and configuration data.
 
-Local storage shall use IndexedDB or localStorage. The storage layer shall cache task data locally, queue or preserve local changes when offline, and synchronize with GitHub when online.
+Local storage shall use localStorage for sync settings. Task changes shall synchronize directly with GitHub when online rather than being queued locally.
 
 Synchronization shall use the GitHub REST API directly from the browser. At minimum, the app shall support reading `/data/tasks.json` and writing updated `/data/tasks.json` back to the repository using authenticated API requests. Authentication shall use a GitHub token entered and stored in the browser by the user. The app shall document the token permissions needed.
 

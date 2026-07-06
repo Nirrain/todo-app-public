@@ -25,9 +25,9 @@ export function clearManualOrder(tasks: Task[]): Task[] {
 export function reflowTasks(tasks: Task[], options: ReflowOptions): Task[] {
   const filters =
     options.filters ?? {
-      context: "all",
-      importance: "all",
-      category: "all",
+      contexts: null,
+      categories: null,
+      query: "",
       sortMode: "importance",
     };
   const ordered = sortTasks(tasks, filters, options.config).map(normalizeTask);

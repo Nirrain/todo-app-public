@@ -4,7 +4,7 @@ Top 10 Tasks is a TypeScript React + Vite Progressive Web App that is intended t
 
 ## Features
 
-- Top-10 task view with indoor/outdoor, importance, category, due date, notes, and big-win metadata
+- Top-10 task view with indoor/outdoor, importance, category, due date, and notes metadata
 - Compact mobile-first layout with the task list at the top of the screen
 - Inline editing directly from the visible top-10 task cards
 - Hamburger-menu settings panel with separate Login and Categories submenus
@@ -125,7 +125,7 @@ If you keep the app in `todo-app-public` and the live JSON in private `todo-app`
 
 ## Editing and manual reprioritization
 
-- Tap **Edit** on any visible task to change its title, notes, context, importance, category, or big-win flag directly in the top-10 list.
+- Tap **Edit** on any visible task to change its title, notes, context, importance, category, or due date directly in the top-10 list.
 - Tasks can optionally include a due date.
 - Saving an edit writes the change directly to the private repository.
 - Drag a visible task onto another visible task to reorder it.
@@ -142,7 +142,6 @@ Use the **Add a task** form to provide:
 - importance from 1 to 3
 - a single category, chosen from the category list in private `config.json`
 - an optional due date
-- an optional big-win flag
 
 New tasks are written directly to the private repository.
 
@@ -156,9 +155,9 @@ New tasks are written directly to the private repository.
 
 The app supports:
 
-- indoor/outdoor context filtering
-- importance filtering
-- category filtering
+- indoor/outdoor toggle filtering
+- per-category on/off filtering
+- free-text filtering
 - configurable sorting by importance, created date, or due date ascending
 
 Tasks without a due date sort after tasks that do have one when **Due date ascending** is selected.
@@ -189,7 +188,6 @@ Stores the active task list in the private `todo-app` repository. Core fields ar
 - `importance`
 - `category`
 - `dueDate`
-- `bigWin`
 - `skipped`
 - `completed`
 - `createdAt`

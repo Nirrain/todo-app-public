@@ -7,7 +7,6 @@ export interface Task {
   context: TaskContext;
   importance: 1 | 2 | 3;
   category: string | null;
-  bigWin: boolean;
   skipped: boolean;
   completed: boolean;
   createdAt: string;
@@ -24,7 +23,6 @@ export interface TaskDraft {
   importance: 1 | 2 | 3;
   category: string | null;
   dueDate: string | null;
-  bigWin: boolean;
 }
 
 export interface AppConfig {
@@ -33,9 +31,9 @@ export interface AppConfig {
 }
 
 export interface TaskFilters {
-  context: TaskContext | "all";
-  importance: "all" | "1" | "2" | "3";
-  category: string | "all";
+  contexts: TaskContext[] | null;
+  categories: string[] | null;
+  query: string;
   sortMode: "importance" | "createdAt" | "dueDate";
 }
 

@@ -21,9 +21,9 @@ import type {
 } from "./types";
 
 const defaultFilters: TaskFilters = {
-  context: "all",
-  importance: "all",
-  category: "all",
+  contexts: null,
+  categories: null,
+  query: "",
   sortMode: "importance",
 };
 
@@ -32,7 +32,7 @@ const defaultConfig: AppConfig = {
   maxVisible: 10,
 };
 
-type SettingsView = "login" | "categories";
+type SettingsView = "login" | "categories" | null;
 
 interface RemoteState {
   config: AppConfig;
@@ -139,7 +139,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(buildInitialSyncSettings);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsView, setSettingsView] = useState<SettingsView>("login");
+  const [settingsView, setSettingsView] = useState<SettingsView>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -165,13 +165,26 @@ export default function App() {
   }, [syncSettings]);
 
   useEffect(() => {
-    if (filters.category !== "all" && !config.categories.includes(filters.category)) {
-      setFilters((current) => ({
+    setFilters((current) => {
+      if (current.categories === null) {
+        return current;
+      }
+
+      const nextCategories = current.categories.filter((category) =>
+        config.categories.includes(category),
+      );
+
+      if (nextCategories.length === current.categories.length) {
+        return current;
+      }
+
+      return {
         ...current,
-        category: "all",
-      }));
-    }
-  }, [config.categories, filters.category]);
+        categories:
+          nextCategories.length === config.categories.length ? null : nextCategories,
+      };
+    });
+  }, [config.categories]);
 
   useEffect(() => {
     setVisibleCount(config.maxVisible);
@@ -645,6 +658,21 @@ export default function App() {
     );
   }
 
+  function closeSettingsPanel() {
+    setIsSettingsOpen(false);
+    setSettingsView(null);
+  }
+
+  function toggleSettingsPanel() {
+    if (isSettingsOpen) {
+      closeSettingsPanel();
+      return;
+    }
+
+    setIsSettingsOpen(true);
+    setSettingsView(null);
+  }
+
   return (
     <main className="app-shell compact-shell">
       <header className="topbar">
@@ -661,7 +689,7 @@ export default function App() {
             className="menu-button"
             type="button"
             aria-label="Open settings"
-            onClick={() => setIsSettingsOpen((current) => !current)}
+            onClick={toggleSettingsPanel}
           >
             <span />
             <span />
@@ -696,7 +724,7 @@ export default function App() {
             <button
               className="button ghost compact-button"
               type="button"
-              onClick={() => setIsSettingsOpen(false)}
+              onClick={closeSettingsPanel}
             >
               Close
             </button>
@@ -796,7 +824,7 @@ export default function App() {
                 </span>
               </div>
             </>
-          ) : (
+          ) : settingsView === "categories" ? (
             <div className="section-stack">
               <div className="field-group">
                 <span>New category</span>
@@ -835,6 +863,8 @@ export default function App() {
                 ))}
               </div>
             </div>
+          ) : (
+            <p className="small muted settings-empty">Choose a settings section.</p>
           )}
         </section>
       ) : null}
