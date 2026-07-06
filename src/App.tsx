@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AddTaskForm from "./components/AddTaskForm";
 import Filters from "./components/Filters";
 import TaskList from "./components/TaskList";
@@ -91,6 +91,15 @@ function getErrorMessage(error: unknown): string {
   return "An unexpected error occurred.";
 }
 
+function isConflictError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return (
+    message.includes("409") ||
+    message.toLowerCase().includes("does not match") ||
+    message.toLowerCase().includes("sha")
+  );
+}
+
 export default function App() {
   const [config, setConfig] = useState<AppConfig>(loadCachedConfig() ?? defaultConfig);
   const [tasks, setTasks] = useState<Task[]>(loadCachedTasks());
@@ -100,6 +109,7 @@ export default function App() {
     message: "Loading cached tasks and private GitHub data defaults.",
   });
   const [isSyncing, setIsSyncing] = useState(false);
+  const syncInFlightRef = useRef(false);
   const [pendingCount, setPendingCount] = useState(loadPendingChanges().length);
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(buildInitialSyncSettings);
 
@@ -349,6 +359,10 @@ export default function App() {
   }
 
   async function handleSync(isAutomatic = false) {
+    if (syncInFlightRef.current) {
+      return;
+    }
+
     if (!hasRepoSettings(syncSettings)) {
       setStatus({
         tone: "error",
@@ -365,68 +379,90 @@ export default function App() {
       return;
     }
 
+    syncInFlightRef.current = true;
     setIsSyncing(true);
 
     try {
-      const [remoteTasksFile, remoteConfigFile] = await Promise.all([
-        fetchRepositoryJsonFile<TasksFile>(
-          syncSettings,
-          syncSettings.tasksPath,
-          syncSettings.token,
-        ),
-        fetchRepositoryJsonFile<AppConfig>(
-          syncSettings,
-          syncSettings.configPath,
-          syncSettings.token,
-        ),
-      ]);
+      let lastError: unknown = null;
 
-      const mergedConfig = remoteConfigFile.content;
-      const pendingChanges = loadPendingChanges();
-      const mergedTasks = reflowTasks(
-        applyPendingChanges(remoteTasksFile.content.tasks ?? [], pendingChanges),
-        { config: mergedConfig },
-      );
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const [remoteTasksFile, remoteConfigFile] = await Promise.all([
+            fetchRepositoryJsonFile<TasksFile>(
+              syncSettings,
+              syncSettings.tasksPath,
+              syncSettings.token,
+            ),
+            fetchRepositoryJsonFile<AppConfig>(
+              syncSettings,
+              syncSettings.configPath,
+              syncSettings.token,
+            ),
+          ]);
 
-      setConfig(mergedConfig);
-      setTasks(mergedTasks);
-      saveCachedConfig(mergedConfig);
-      saveCachedTasks(mergedTasks);
+          const mergedConfig = remoteConfigFile.content;
+          const pendingChanges = loadPendingChanges();
+          const mergedTasks = reflowTasks(
+            applyPendingChanges(remoteTasksFile.content.tasks ?? [], pendingChanges),
+            { config: mergedConfig },
+          );
 
-      if (pendingChanges.length === 0) {
-        setStatus({
-          tone: "success",
-          message: "Private repository state refreshed from GitHub.",
-        });
-        return;
+          if (pendingChanges.length === 0) {
+            setConfig(mergedConfig);
+            setTasks(mergedTasks);
+            saveCachedConfig(mergedConfig);
+            saveCachedTasks(mergedTasks);
+            setStatus({
+              tone: "success",
+              message: "Private repository state refreshed from GitHub.",
+            });
+            return;
+          }
+
+          await updateRepositoryJsonFile(
+            syncSettings,
+            syncSettings.tasksPath,
+            { tasks: mergedTasks },
+            remoteTasksFile.sha,
+            syncSettings.token,
+            "Sync tasks from PWA",
+          );
+
+          setConfig(mergedConfig);
+          setTasks(mergedTasks);
+          saveCachedConfig(mergedConfig);
+          saveCachedTasks(mergedTasks);
+          clearPendingChanges();
+          setPendingCount(0);
+          setStatus({
+            tone: "success",
+            message: isAutomatic
+              ? "Cached changes were synced to the private repository."
+              : "Private GitHub repository updated successfully.",
+          });
+          return;
+        } catch (error) {
+          lastError = error;
+
+          if (attempt === 0 && isConflictError(error)) {
+            continue;
+          }
+
+          throw error;
+        }
       }
 
-      await updateRepositoryJsonFile(
-        syncSettings,
-        syncSettings.tasksPath,
-        { tasks: mergedTasks },
-        remoteTasksFile.sha,
-        syncSettings.token,
-        "Sync tasks from PWA",
-      );
-
-      clearPendingChanges();
-      setPendingCount(0);
-      setStatus({
-        tone: "success",
-        message: isAutomatic
-          ? "Cached changes were synced to the private repository."
-          : "Private GitHub repository updated successfully.",
-      });
+      throw lastError;
     } catch (error) {
       const message = getErrorMessage(error);
       setStatus({
         tone: "error",
-        message: message.includes("409")
-          ? "GitHub rejected the update because the file changed remotely. Sync again after reviewing the repo state."
+        message: isConflictError(error)
+          ? "GitHub changed the file during sync. The app retried with the latest remote data but the update still conflicted."
           : message,
       });
     } finally {
+      syncInFlightRef.current = false;
       setIsSyncing(false);
     }
   }
