@@ -1,0 +1,19 @@
+{
+  "name": "Top 10 Tasks",
+  "short_name": "TopTasks",
+  "description": "A GitHub-native personal task manager PWA with offline cache and repository sync.",
+  "display": "standalone",
+  "start_url": ".",
+  "scope": ".",
+  "background_color": "#f8fafc",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

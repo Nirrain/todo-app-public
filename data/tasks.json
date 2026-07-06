@@ -1,0 +1,187 @@
+{
+  "tasks": [
+    {
+      "notes": "Trim anything that should not compete for this week's attention.",
+      "mood": [
+        "practical"
+      ],
+      "skipped": false,
+      "bigWin": true,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240001",
+      "title": "Review the top ten priorities for today",
+      "context": "indoor",
+      "importance": 3,
+      "createdAt": "2026-07-01T08:00:00.000Z",
+      "updatedAt": "2026-07-01T08:00:00.000Z",
+      "manualOrder": 0
+    },
+    {
+      "notes": "Combine pharmacy, groceries, and parcel drop-off into one trip.",
+      "mood": [
+        "practical"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240002",
+      "title": "Plan the next outdoor errand batch",
+      "context": "outdoor",
+      "importance": 2,
+      "createdAt": "2026-07-01T09:00:00.000Z",
+      "updatedAt": "2026-07-01T09:00:00.000Z",
+      "manualOrder": 1
+    },
+    {
+      "notes": "Capture one lesson learned and one thing to improve tomorrow.",
+      "mood": [
+        "creative",
+        "low-effort"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240003",
+      "title": "Draft a short journal entry",
+      "context": "indoor",
+      "importance": 1,
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "updatedAt": "2026-07-01T10:00:00.000Z",
+      "manualOrder": 2
+    },
+    {
+      "notes": null,
+      "mood": [
+        "low-effort"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240004",
+      "title": "Refill water bottles and prep bag",
+      "context": "indoor",
+      "importance": 2,
+      "createdAt": "2026-07-01T11:00:00.000Z",
+      "updatedAt": "2026-07-01T11:00:00.000Z",
+      "manualOrder": 3
+    },
+    {
+      "notes": "Use it as a reset if energy is dropping.",
+      "mood": [
+        "low-effort"
+      ],
+      "skipped": false,
+      "bigWin": true,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240005",
+      "title": "Take a 20-minute walk",
+      "context": "outdoor",
+      "importance": 2,
+      "createdAt": "2026-07-02T08:00:00.000Z",
+      "updatedAt": "2026-07-02T08:00:00.000Z",
+      "manualOrder": 4
+    },
+    {
+      "notes": "Keep it under 30 minutes and define a visible outcome.",
+      "mood": [
+        "creative"
+      ],
+      "skipped": false,
+      "bigWin": true,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240006",
+      "title": "Outline the next creative side-project step",
+      "context": "indoor",
+      "importance": 2,
+      "createdAt": "2026-07-02T09:00:00.000Z",
+      "updatedAt": "2026-07-02T09:00:00.000Z",
+      "manualOrder": 5
+    },
+    {
+      "notes": "Limit the clean-up to a single surface or corner.",
+      "mood": [
+        "low-effort",
+        "practical"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240007",
+      "title": "Tidy one small living area",
+      "context": "indoor",
+      "importance": 1,
+      "createdAt": "2026-07-02T10:00:00.000Z",
+      "updatedAt": "2026-07-02T10:00:00.000Z",
+      "manualOrder": 6
+    },
+    {
+      "notes": "Focus on the three basics needed for tomorrow.",
+      "mood": [
+        "practical"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240008",
+      "title": "Pick up produce from the market",
+      "context": "outdoor",
+      "importance": 3,
+      "createdAt": "2026-07-03T08:00:00.000Z",
+      "updatedAt": "2026-07-03T08:00:00.000Z",
+      "manualOrder": 7
+    },
+    {
+      "notes": "Keep it short and meaningful.",
+      "mood": [
+        "practical",
+        "low-effort"
+      ],
+      "skipped": false,
+      "bigWin": true,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240009",
+      "title": "Send one important personal message",
+      "context": "indoor",
+      "importance": 2,
+      "createdAt": "2026-07-03T09:00:00.000Z",
+      "updatedAt": "2026-07-03T09:00:00.000Z",
+      "manualOrder": 8
+    },
+    {
+      "notes": null,
+      "mood": [
+        "creative"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240010",
+      "title": "Sketch ideas for the weekend",
+      "context": "indoor",
+      "importance": 1,
+      "createdAt": "2026-07-03T10:00:00.000Z",
+      "updatedAt": "2026-07-03T10:00:00.000Z",
+      "manualOrder": 9
+    },
+    {
+      "notes": "Only if the mood is creative and you are already out.",
+      "mood": [
+        "creative"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240011",
+      "title": "Browse a bookstore or library shelf",
+      "context": "outdoor",
+      "importance": 1,
+      "createdAt": "2026-07-04T08:00:00.000Z",
+      "updatedAt": "2026-07-04T08:00:00.000Z",
+      "manualOrder": 10
+    },
+    {
+      "notes": "Use as a fallback when everything else feels heavy.",
+      "mood": [
+        "low-effort"
+      ],
+      "skipped": false,
+      "bigWin": false,
+      "id": "d9e5d515-8534-49a3-bb61-1ad52f240012",
+      "title": "Stretch and reset posture",
+      "context": "indoor",
+      "importance": 1,
+      "createdAt": "2026-07-04T09:00:00.000Z",
+      "updatedAt": "2026-07-04T09:00:00.000Z",
+      "manualOrder": 11
+    }
+  ]
+}
