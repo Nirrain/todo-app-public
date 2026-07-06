@@ -92,6 +92,12 @@ function isConflictError(error: unknown): boolean {
   );
 }
 
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
 export default function App() {
   const [config, setConfig] = useState<AppConfig>(defaultConfig);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -312,11 +318,15 @@ export default function App() {
 
     syncInFlightRef.current = true;
     setIsSyncing(true);
+    setStatus({
+      tone: "info",
+      message: "Saving to the private repository.",
+    });
 
     try {
       let lastError: unknown = null;
 
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
           const remoteState = await fetchRemoteState();
           const nextTasks = reflowTasks(
@@ -343,7 +353,8 @@ export default function App() {
         } catch (error) {
           lastError = error;
 
-          if (attempt === 0 && isConflictError(error)) {
+          if (isConflictError(error) && attempt < 4) {
+            await wait(500 * (attempt + 1));
             continue;
           }
 
@@ -353,10 +364,20 @@ export default function App() {
 
       throw lastError;
     } catch (error) {
+      if (isConflictError(error)) {
+        try {
+          const remoteState = await fetchRemoteState();
+          setConfig(remoteState.config);
+          setTasks(remoteState.tasks);
+        } catch {
+          // Preserve the original conflict error if the follow-up refresh also fails.
+        }
+      }
+
       setStatus({
         tone: "error",
         message: isConflictError(error)
-          ? "GitHub changed the file during save and the retry also conflicted."
+          ? "Another process kept updating the private repository during save. The app refreshed to the latest remote state."
           : getErrorMessage(error),
       });
     } finally {
