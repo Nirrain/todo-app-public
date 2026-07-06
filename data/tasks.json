@@ -12,7 +12,8 @@
       "createdAt": "2026-07-01T08:00:00.000Z",
       "changedAt": "2026-07-01T08:00:00.000Z",
       "updatedAt": "2026-07-01T08:00:00.000Z",
-      "manualOrder": 0
+      "manualOrder": 0,
+      "dueDate": null
     },
     {
       "notes": "Combine pharmacy, groceries, and parcel drop-off into one trip.",
@@ -26,7 +27,8 @@
       "createdAt": "2026-07-01T09:00:00.000Z",
       "changedAt": "2026-07-01T09:00:00.000Z",
       "updatedAt": "2026-07-01T09:00:00.000Z",
-      "manualOrder": 1
+      "manualOrder": 1,
+      "dueDate": null
     },
     {
       "notes": "Capture one lesson learned and one thing to improve tomorrow.",
@@ -40,7 +42,8 @@
       "createdAt": "2026-07-01T10:00:00.000Z",
       "changedAt": "2026-07-01T10:00:00.000Z",
       "updatedAt": "2026-07-01T10:00:00.000Z",
-      "manualOrder": 2
+      "manualOrder": 2,
+      "dueDate": null
     },
     {
       "notes": null,
@@ -54,7 +57,8 @@
       "createdAt": "2026-07-01T11:00:00.000Z",
       "changedAt": "2026-07-01T11:00:00.000Z",
       "updatedAt": "2026-07-01T11:00:00.000Z",
-      "manualOrder": 3
+      "manualOrder": 3,
+      "dueDate": null
     },
     {
       "notes": "Use it as a reset if energy is dropping.",
@@ -68,7 +72,8 @@
       "createdAt": "2026-07-02T08:00:00.000Z",
       "changedAt": "2026-07-02T08:00:00.000Z",
       "updatedAt": "2026-07-02T08:00:00.000Z",
-      "manualOrder": 4
+      "manualOrder": 4,
+      "dueDate": null
     },
     {
       "notes": "Keep it under 30 minutes and define a visible outcome.",
@@ -82,7 +87,8 @@
       "createdAt": "2026-07-02T09:00:00.000Z",
       "changedAt": "2026-07-02T09:00:00.000Z",
       "updatedAt": "2026-07-02T09:00:00.000Z",
-      "manualOrder": 5
+      "manualOrder": 5,
+      "dueDate": null
     },
     {
       "notes": "Limit the clean-up to a single surface or corner.",
@@ -96,7 +102,8 @@
       "createdAt": "2026-07-02T10:00:00.000Z",
       "changedAt": "2026-07-02T10:00:00.000Z",
       "updatedAt": "2026-07-02T10:00:00.000Z",
-      "manualOrder": 6
+      "manualOrder": 6,
+      "dueDate": null
     },
     {
       "notes": "Focus on the three basics needed for tomorrow.",
@@ -110,7 +117,8 @@
       "createdAt": "2026-07-03T08:00:00.000Z",
       "changedAt": "2026-07-03T08:00:00.000Z",
       "updatedAt": "2026-07-03T08:00:00.000Z",
-      "manualOrder": 7
+      "manualOrder": 7,
+      "dueDate": null
     },
     {
       "notes": "Keep it short and meaningful.",
@@ -124,7 +132,8 @@
       "createdAt": "2026-07-03T09:00:00.000Z",
       "changedAt": "2026-07-03T09:00:00.000Z",
       "updatedAt": "2026-07-03T09:00:00.000Z",
-      "manualOrder": 8
+      "manualOrder": 8,
+      "dueDate": null
     },
     {
       "notes": null,
@@ -138,7 +147,8 @@
       "createdAt": "2026-07-03T10:00:00.000Z",
       "changedAt": "2026-07-03T10:00:00.000Z",
       "updatedAt": "2026-07-03T10:00:00.000Z",
-      "manualOrder": 9
+      "manualOrder": 9,
+      "dueDate": null
     },
     {
       "notes": "Only if the category is creative and you are already out.",
@@ -152,7 +162,8 @@
       "createdAt": "2026-07-04T08:00:00.000Z",
       "changedAt": "2026-07-04T08:00:00.000Z",
       "updatedAt": "2026-07-04T08:00:00.000Z",
-      "manualOrder": 10
+      "manualOrder": 10,
+      "dueDate": null
     },
     {
       "notes": "Use as a fallback when everything else feels heavy.",
@@ -166,7 +177,8 @@
       "createdAt": "2026-07-04T09:00:00.000Z",
       "changedAt": "2026-07-04T09:00:00.000Z",
       "updatedAt": "2026-07-04T09:00:00.000Z",
-      "manualOrder": 11
+      "manualOrder": 11,
+      "dueDate": null
     }
   ]
 }
