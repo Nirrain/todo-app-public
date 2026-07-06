@@ -5,10 +5,12 @@ Top 10 Tasks is a TypeScript React + Vite Progressive Web App that is intended t
 ## Features
 
 - Top-10 task view with indoor/outdoor, importance, mood, notes, and big-win metadata
+- Compact mobile-first layout with the task list at the top of the screen
 - Inline editing directly from the visible top-10 task cards
+- Hamburger-menu settings panel for repository credentials
 - Manual reprioritization with drag-and-drop plus move up/down controls
 - Skip, complete, and automatic reflow behavior
-- Offline-first PWA with a service worker and local cache
+- Immediate GitHub sync on every task change
 - Browser-based GitHub sync with no backend server
 - Repository automation for GitHub Pages deployment and task reflow
 
@@ -90,16 +92,16 @@ The app reads and writes changes directly to the private `todo-app/data/tasks.js
    - **Branch**
    - **GitHub token**
 
-When hosted from a GitHub Pages URL, the app defaults the data repository to `todo-app` under the same owner. The token is stored only in the current browser via localStorage.
+When hosted from a GitHub Pages URL, the app defaults the data repository to `todo-app` under the same owner. The token is stored only in the browser's localStorage and is edited from the Settings menu.
 
 ## How syncing works
 
-- The app always works against a local cache first.
-- The published bundle in `todo-app-public` provides fallback JSON for offline startup and first load.
-- New tasks, skips, completions, and manual reorder changes are stored locally immediately.
-- When **Sync now** runs, the app fetches the latest copy of `data/tasks.json` from the private `todo-app` repository, applies pending local changes, reflows the task order, and writes the updated JSON back there.
-- If you are offline, changes remain queued locally until sync succeeds.
-- If GitHub reports a conflicting file update, the app surfaces the error instead of silently discarding data.
+- The published bundle in `todo-app-public` provides fallback JSON for first load and read-only use before credentials are configured.
+- After the private repository credentials are configured, the app refreshes from the live private repository.
+- Adding, editing, skipping, completing, and manual reordering each trigger an immediate write to the private `todo-app` repository.
+- Each save fetches the latest remote `data/tasks.json`, applies the requested change, reflows the task order, and writes the updated JSON back.
+- If GitHub reports a conflicting file update during save, the app retries once against the latest remote version before surfacing an error.
+- If you are offline, task mutations are disabled instead of being queued locally.
 
 If a token is already stored in the browser, the app automatically refreshes from the private data repository when it starts online.
 
@@ -122,7 +124,7 @@ If you keep the app in `todo-app-public` and the live JSON in private `todo-app`
 ## Editing and manual reprioritization
 
 - Tap **Edit** on any visible task to change its title, notes, context, importance, mood tags, or big-win flag directly in the top-10 list.
-- Saving an edit updates the local cache immediately and queues the change for GitHub sync.
+- Saving an edit writes the change directly to the private repository.
 - Drag a visible task onto another visible task to reorder it.
 - On touch devices, use **Move up** and **Move down**.
 - Manual order takes precedence over automatic scoring until **Clear manual order** is used.
@@ -138,7 +140,7 @@ Use the **Add a task** form to provide:
 - one or more mood tags
 - an optional big-win flag
 
-New tasks are cached instantly and can then be synced back to GitHub.
+New tasks are written directly to the private repository.
 
 ## Filters
 
@@ -178,6 +180,10 @@ Stores the active task list in the private `todo-app` repository. Core fields ar
 - `createdAt`
 
 The implementation also keeps `updatedAt` and `manualOrder` metadata so sync and manual reprioritization remain durable.
+
+## License
+
+This project is licensed under the **MIT License**. See [`LICENSE`](./LICENSE).
 
 ## Available scripts
 

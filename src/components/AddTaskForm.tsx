@@ -3,6 +3,7 @@ import type { TaskContext, TaskDraft } from "../types";
 
 interface AddTaskFormProps {
   moods: string[];
+  disabled: boolean;
   onAddTask: (draft: TaskDraft) => void;
 }
 
@@ -24,7 +25,7 @@ const defaultTask: DraftState = {
   bigWin: false,
 };
 
-export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
+export default function AddTaskForm({ moods, disabled, onAddTask }: AddTaskFormProps) {
   const [draft, setDraft] = useState<DraftState>(defaultTask);
   const canSubmit = useMemo(() => draft.title.trim().length > 0, [draft.title]);
 
@@ -73,6 +74,7 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
             type="text"
             value={draft.title}
             maxLength={120}
+            disabled={disabled}
             placeholder="Write the next useful task"
             onChange={(event) => updateField("title", event.target.value)}
           />
@@ -82,6 +84,7 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
           <span>Optional notes</span>
           <textarea
             value={draft.notes}
+            disabled={disabled}
             placeholder="Anything worth remembering"
             onChange={(event) => updateField("notes", event.target.value)}
           />
@@ -92,6 +95,7 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
             <span>Context</span>
             <select
               value={draft.context}
+              disabled={disabled}
               onChange={(event) =>
                 updateField("context", event.target.value as TaskContext)
               }
@@ -105,6 +109,7 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
             <span>Importance</span>
             <select
               value={draft.importance}
+              disabled={disabled}
               onChange={(event) =>
                 updateField("importance", Number(event.target.value) as 1 | 2 | 3)
               }
@@ -124,6 +129,7 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
                 key={mood}
                 className={`chip ${draft.moods.includes(mood) ? "active" : ""}`}
                 type="button"
+                disabled={disabled}
                 onClick={() => toggleMood(mood)}
               >
                 {mood}
@@ -136,12 +142,13 @@ export default function AddTaskForm({ moods, onAddTask }: AddTaskFormProps) {
           <input
             type="checkbox"
             checked={draft.bigWin}
+            disabled={disabled}
             onChange={(event) => updateField("bigWin", event.target.checked)}
           />
           <span>Mark as a big win</span>
         </label>
 
-        <button className="button" type="submit" disabled={!canSubmit}>
+        <button className="button compact-button" type="submit" disabled={!canSubmit || disabled}>
           Add task
         </button>
       </form>

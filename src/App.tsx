@@ -9,21 +9,9 @@ import {
 } from "./logic/api";
 import { sortTasks } from "./logic/priorityEngine";
 import { applyManualOrder, clearManualOrder, reflowTasks } from "./logic/reflowEngine";
-import {
-  applyPendingChanges,
-  clearPendingChanges,
-  loadCachedConfig,
-  loadCachedTasks,
-  loadPendingChanges,
-  loadSyncSettings,
-  queuePendingChange,
-  saveCachedConfig,
-  saveCachedTasks,
-  saveSyncSettings,
-} from "./logic/storage";
+import { loadSyncSettings, saveSyncSettings } from "./logic/storage";
 import type {
   AppConfig,
-  PendingChange,
   StatusMessage,
   SyncSettings,
   Task,
@@ -67,6 +55,10 @@ function hasRepoSettings(settings: SyncSettings): boolean {
   return Boolean(settings.owner && settings.repo && settings.branch);
 }
 
+function canSync(settings: SyncSettings): boolean {
+  return getIsOnline() && Boolean(settings.token) && hasRepoSettings(settings);
+}
+
 function buildInitialSyncSettings(): SyncSettings {
   const defaults = getDefaultSyncSettings();
   const stored = loadSyncSettings();
@@ -92,29 +84,38 @@ function getErrorMessage(error: unknown): string {
 }
 
 function isConflictError(error: unknown): boolean {
-  const message = getErrorMessage(error);
+  const message = getErrorMessage(error).toLowerCase();
   return (
     message.includes("409") ||
-    message.toLowerCase().includes("does not match") ||
-    message.toLowerCase().includes("sha")
+    message.includes("does not match") ||
+    message.includes("sha")
   );
 }
 
 export default function App() {
-  const [config, setConfig] = useState<AppConfig>(loadCachedConfig() ?? defaultConfig);
-  const [tasks, setTasks] = useState<Task[]>(loadCachedTasks());
+  const [config, setConfig] = useState<AppConfig>(defaultConfig);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
-    message: "Loading cached tasks and private GitHub data defaults.",
+    message: "Loading Top 10 Tasks.",
   });
   const [isSyncing, setIsSyncing] = useState(false);
-  const syncInFlightRef = useRef(false);
-  const [pendingCount, setPendingCount] = useState(loadPendingChanges().length);
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(buildInitialSyncSettings);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const allRankedTasks = useMemo(() => sortTasks(tasks, defaultFilters, config), [config, tasks]);
-  const rankedTasks = useMemo(() => sortTasks(tasks, filters, config), [config, filters, tasks]);
+  const syncInFlightRef = useRef(false);
+
+  const allRankedTasks = useMemo(
+    () => sortTasks(tasks, defaultFilters, config),
+    [config, tasks],
+  );
+  const rankedTasks = useMemo(
+    () => sortTasks(tasks, filters, config),
+    [config, filters, tasks],
+  );
   const visibleTasks = useMemo(
     () => rankedTasks.slice(0, config.maxVisible || 10),
     [config.maxVisible, rankedTasks],
@@ -123,6 +124,7 @@ export default function App() {
     () => tasks.some((task) => Number.isInteger(task.manualOrder)),
     [tasks],
   );
+  const canMutate = canSync(syncSettings) && !isSyncing;
 
   useEffect(() => {
     saveSyncSettings(syncSettings);
@@ -142,22 +144,23 @@ export default function App() {
           return;
         }
 
-        const normalizedTasks = reflowTasks(staticTasks.tasks ?? [], {
+        const fallbackTasks = reflowTasks(staticTasks.tasks ?? [], {
           config: staticConfig,
         });
 
         setConfig(staticConfig);
-        saveCachedConfig(staticConfig);
-        setTasks((currentTasks) => {
-          const nextTasks = currentTasks.length > 0 ? currentTasks : normalizedTasks;
-          saveCachedTasks(nextTasks);
-          return nextTasks;
-        });
+        setTasks(fallbackTasks);
+
+        if (canSync(syncSettings)) {
+          await refreshFromRemote(false);
+          return;
+        }
+
         setStatus({
           tone: "info",
           message: getIsOnline()
-            ? "Ready. Local cache loaded from the public app bundle."
-            : "Offline mode active. Using cached task data.",
+            ? "Open Settings and add a GitHub token to work against the private repository."
+            : "Offline. Showing bundled fallback tasks only.",
         });
       } catch (error) {
         if (!cancelled) {
@@ -177,29 +180,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!getIsOnline() || !syncSettings.token || !hasRepoSettings(syncSettings)) {
+    if (!canSync(syncSettings)) {
       return;
     }
 
-    void handleSync(false);
+    void refreshFromRemote(false);
   }, [syncSettings.token, syncSettings.owner, syncSettings.repo, syncSettings.branch]);
 
   useEffect(() => {
     function handleOnline() {
       setStatus({
         tone: "info",
-        message: "Connection restored. Private repository sync is available.",
+        message: canSync(syncSettings)
+          ? "Back online. Refreshing private repository state."
+          : "Back online. Add your token in Settings to enable private repository sync.",
       });
 
-      if (loadPendingChanges().length > 0 && syncSettings.token && hasRepoSettings(syncSettings)) {
-        void handleSync(true);
+      if (canSync(syncSettings)) {
+        void refreshFromRemote(false);
       }
     }
 
     function handleOffline() {
       setStatus({
         tone: "info",
-        message: "Offline mode active. Changes will stay cached until sync succeeds.",
+        message: "Offline. Changes are disabled until the private repository is reachable.",
       });
     }
 
@@ -212,153 +217,71 @@ export default function App() {
     };
   }, [syncSettings]);
 
-  function commitTaskState(nextTasks: Task[], change: PendingChange | null, message: string) {
-    const reflowed = reflowTasks(nextTasks, { config });
-    setTasks(reflowed);
-    saveCachedTasks(reflowed);
+  async function fetchRemoteState() {
+    const [remoteTasksFile, remoteConfigFile] = await Promise.all([
+      fetchRepositoryJsonFile<TasksFile>(
+        syncSettings,
+        syncSettings.tasksPath,
+        syncSettings.token,
+      ),
+      fetchRepositoryJsonFile<AppConfig>(
+        syncSettings,
+        syncSettings.configPath,
+        syncSettings.token,
+      ),
+    ]);
 
-    if (change) {
-      const pendingChanges = queuePendingChange({
-        ...change,
-        changedAt: getNow(),
-      });
-      setPendingCount(pendingChanges.length);
-    }
-
-    setStatus({
-      tone: "info",
-      message,
+    const remoteConfig = remoteConfigFile.content;
+    const remoteTasks = reflowTasks(remoteTasksFile.content.tasks ?? [], {
+      config: remoteConfig,
     });
+
+    return {
+      config: remoteConfig,
+      tasks: remoteTasks,
+      sha: remoteTasksFile.sha,
+    };
   }
 
-  function updateTask(
-    taskId: string,
-    transform: (task: Task) => Task,
-    message: string,
+  async function refreshFromRemote(showSuccessMessage: boolean) {
+    if (syncInFlightRef.current || !canSync(syncSettings)) {
+      return;
+    }
+
+    syncInFlightRef.current = true;
+    setIsSyncing(true);
+
+    try {
+      const remoteState = await fetchRemoteState();
+      setConfig(remoteState.config);
+      setTasks(remoteState.tasks);
+
+      if (showSuccessMessage) {
+        setStatus({
+          tone: "success",
+          message: "Private repository refreshed.",
+        });
+      } else {
+        setStatus({
+          tone: "info",
+          message: "Showing live data from the private repository.",
+        });
+      }
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message: getErrorMessage(error),
+      });
+    } finally {
+      syncInFlightRef.current = false;
+      setIsSyncing(false);
+    }
+  }
+
+  async function runRemoteTaskMutation(
+    buildNextTasks: (remoteTasks: Task[], remoteConfig: AppConfig) => Task[],
+    successMessage: string,
   ) {
-    const currentTask = tasks.find((item) => item.id === taskId);
-
-    if (!currentTask) {
-      return;
-    }
-
-    const updatedTask = {
-      ...transform(currentTask),
-      updatedAt: getNow(),
-    };
-
-    const nextTasks = tasks.map((task) => (task.id === taskId ? updatedTask : task));
-    commitTaskState(nextTasks, { type: "upsert", task: updatedTask }, message);
-  }
-
-  function handleAddTask(draft: TaskDraft) {
-    const now = getNow();
-    const task: Task = {
-      id: crypto.randomUUID(),
-      ...draft,
-      skipped: false,
-      createdAt: now,
-      updatedAt: now,
-      manualOrder: null,
-    };
-
-    commitTaskState(
-      [...tasks, task],
-      { type: "upsert", task },
-      "Task added locally. Sync to push it to the private data repository.",
-    );
-  }
-
-  function handleEditTask(taskId: string, draft: TaskDraft) {
-    updateTask(
-      taskId,
-      (task) => ({
-        ...task,
-        ...draft,
-      }),
-      "Task updated locally from the top-10 list.",
-    );
-  }
-
-  function handleComplete(taskId: string) {
-    const nextTasks = tasks.filter((task) => task.id !== taskId);
-    commitTaskState(
-      nextTasks,
-      { type: "delete", taskId },
-      "Task completed and removed from the active queue.",
-    );
-  }
-
-  function handleSkip(taskId: string) {
-    updateTask(
-      taskId,
-      (task) => ({
-        ...task,
-        skipped: true,
-      }),
-      "Task skipped and deprioritized.",
-    );
-  }
-
-  function handleUnskip(taskId: string) {
-    updateTask(
-      taskId,
-      (task) => ({
-        ...task,
-        skipped: false,
-      }),
-      "Skip state removed and priorities reflowed.",
-    );
-  }
-
-  function reorderVisibleTasks(nextVisible: Task[]) {
-    const visibleIds = new Set(visibleTasks.map((task) => task.id));
-    const remainder = allRankedTasks.filter((task) => !visibleIds.has(task.id));
-    const manuallyOrdered = applyManualOrder([...nextVisible, ...remainder]);
-
-    commitTaskState(
-      manuallyOrdered,
-      { type: "replaceAll", tasks: manuallyOrdered },
-      "Manual priority order updated.",
-    );
-  }
-
-  function handleMoveTask(fromId: string, toId: string) {
-    const nextVisible = [...visibleTasks];
-    const fromIndex = nextVisible.findIndex((task) => task.id === fromId);
-    const toIndex = nextVisible.findIndex((task) => task.id === toId);
-
-    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
-      return;
-    }
-
-    const [moved] = nextVisible.splice(fromIndex, 1);
-    nextVisible.splice(toIndex, 0, moved);
-    reorderVisibleTasks(nextVisible);
-  }
-
-  function handleMoveDirection(taskId: string, delta: number) {
-    const currentIndex = visibleTasks.findIndex((task) => task.id === taskId);
-    const nextIndex = currentIndex + delta;
-
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= visibleTasks.length) {
-      return;
-    }
-
-    handleMoveTask(taskId, visibleTasks[nextIndex].id);
-  }
-
-  function handleClearManualOrder() {
-    const nextTasks = reflowTasks(clearManualOrder(tasks), { config });
-
-    commitTaskState(
-      nextTasks,
-      { type: "replaceAll", tasks: nextTasks },
-      "Manual ordering cleared. Automatic priority rules are active again.",
-    );
-  }
-
-  async function handleSync(isAutomatic = false) {
     if (syncInFlightRef.current) {
       return;
     }
@@ -366,7 +289,7 @@ export default function App() {
     if (!hasRepoSettings(syncSettings)) {
       setStatus({
         tone: "error",
-        message: "Set the private data repository owner, name, and branch before syncing.",
+        message: "Open Settings and set the private data repository owner, name, and branch.",
       });
       return;
     }
@@ -374,7 +297,15 @@ export default function App() {
     if (!syncSettings.token) {
       setStatus({
         tone: "error",
-        message: "Add a GitHub token before reading or writing the private data repository.",
+        message: "Open Settings and add a GitHub token before making task changes.",
+      });
+      return;
+    }
+
+    if (!getIsOnline()) {
+      setStatus({
+        tone: "error",
+        message: "You are offline. Changes are disabled until the private repository is reachable.",
       });
       return;
     }
@@ -387,58 +318,26 @@ export default function App() {
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const [remoteTasksFile, remoteConfigFile] = await Promise.all([
-            fetchRepositoryJsonFile<TasksFile>(
-              syncSettings,
-              syncSettings.tasksPath,
-              syncSettings.token,
-            ),
-            fetchRepositoryJsonFile<AppConfig>(
-              syncSettings,
-              syncSettings.configPath,
-              syncSettings.token,
-            ),
-          ]);
-
-          const mergedConfig = remoteConfigFile.content;
-          const pendingChanges = loadPendingChanges();
-          const mergedTasks = reflowTasks(
-            applyPendingChanges(remoteTasksFile.content.tasks ?? [], pendingChanges),
-            { config: mergedConfig },
+          const remoteState = await fetchRemoteState();
+          const nextTasks = reflowTasks(
+            buildNextTasks(remoteState.tasks, remoteState.config),
+            { config: remoteState.config },
           );
-
-          if (pendingChanges.length === 0) {
-            setConfig(mergedConfig);
-            setTasks(mergedTasks);
-            saveCachedConfig(mergedConfig);
-            saveCachedTasks(mergedTasks);
-            setStatus({
-              tone: "success",
-              message: "Private repository state refreshed from GitHub.",
-            });
-            return;
-          }
 
           await updateRepositoryJsonFile(
             syncSettings,
             syncSettings.tasksPath,
-            { tasks: mergedTasks },
-            remoteTasksFile.sha,
+            { tasks: nextTasks },
+            remoteState.sha,
             syncSettings.token,
             "Sync tasks from PWA",
           );
 
-          setConfig(mergedConfig);
-          setTasks(mergedTasks);
-          saveCachedConfig(mergedConfig);
-          saveCachedTasks(mergedTasks);
-          clearPendingChanges();
-          setPendingCount(0);
+          setConfig(remoteState.config);
+          setTasks(nextTasks);
           setStatus({
             tone: "success",
-            message: isAutomatic
-              ? "Cached changes were synced to the private repository."
-              : "Private GitHub repository updated successfully.",
+            message: successMessage,
           });
           return;
         } catch (error) {
@@ -454,12 +353,11 @@ export default function App() {
 
       throw lastError;
     } catch (error) {
-      const message = getErrorMessage(error);
       setStatus({
         tone: "error",
         message: isConflictError(error)
-          ? "GitHub changed the file during sync. The app retried with the latest remote data but the update still conflicted."
-          : message,
+          ? "GitHub changed the file during save and the retry also conflicted."
+          : getErrorMessage(error),
       });
     } finally {
       syncInFlightRef.current = false;
@@ -467,157 +365,281 @@ export default function App() {
     }
   }
 
-  const stats = {
-    total: tasks.length,
-    visible: visibleTasks.length,
-    pending: pendingCount,
-    skipped: tasks.filter((task) => task.skipped).length,
-  };
+  function handleAddTask(draft: TaskDraft) {
+    const now = getNow();
+    const task: Task = {
+      id: crypto.randomUUID(),
+      ...draft,
+      skipped: false,
+      createdAt: now,
+      updatedAt: now,
+      manualOrder: null,
+    };
+
+    void runRemoteTaskMutation(
+      (remoteTasks) => [...remoteTasks, task],
+      "Task saved to the private repository.",
+    );
+  }
+
+  function handleEditTask(taskId: string, draft: TaskDraft) {
+    void runRemoteTaskMutation(
+      (remoteTasks) =>
+        remoteTasks.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                ...draft,
+                updatedAt: getNow(),
+              }
+            : task,
+        ),
+      "Task changes saved to the private repository.",
+    );
+  }
+
+  function handleComplete(taskId: string) {
+    void runRemoteTaskMutation(
+      (remoteTasks) => remoteTasks.filter((task) => task.id !== taskId),
+      "Task completed and saved.",
+    );
+  }
+
+  function handleSkip(taskId: string) {
+    void runRemoteTaskMutation(
+      (remoteTasks) =>
+        remoteTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, skipped: true, updatedAt: getNow() }
+            : task,
+        ),
+      "Task skipped and saved.",
+    );
+  }
+
+  function handleUnskip(taskId: string) {
+    void runRemoteTaskMutation(
+      (remoteTasks) =>
+        remoteTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, skipped: false, updatedAt: getNow() }
+            : task,
+        ),
+      "Skip reset and saved.",
+    );
+  }
+
+  function handleMoveTask(fromId: string, toId: string) {
+    void runRemoteTaskMutation((remoteTasks, remoteConfig) => {
+      const remoteVisible = sortTasks(remoteTasks, filters, remoteConfig).slice(
+        0,
+        remoteConfig.maxVisible,
+      );
+      const remoteVisibleIds = new Set(remoteVisible.map((task) => task.id));
+      const fromIndex = remoteVisible.findIndex((task) => task.id === fromId);
+      const toIndex = remoteVisible.findIndex((task) => task.id === toId);
+
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+        return remoteTasks;
+      }
+
+      const nextVisible = [...remoteVisible];
+      const [moved] = nextVisible.splice(fromIndex, 1);
+      nextVisible.splice(toIndex, 0, moved);
+
+      const remainder = sortTasks(remoteTasks, defaultFilters, remoteConfig).filter(
+        (task) => !remoteVisibleIds.has(task.id),
+      );
+
+      return applyManualOrder([...nextVisible, ...remainder]);
+    }, "Manual order saved.");
+  }
+
+  function handleMoveDirection(taskId: string, delta: number) {
+    const currentIndex = visibleTasks.findIndex((task) => task.id === taskId);
+    const nextIndex = currentIndex + delta;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= visibleTasks.length) {
+      return;
+    }
+
+    handleMoveTask(taskId, visibleTasks[nextIndex].id);
+  }
+
+  function handleClearManualOrder() {
+    void runRemoteTaskMutation(
+      (remoteTasks, remoteConfig) =>
+        reflowTasks(clearManualOrder(remoteTasks), { config: remoteConfig }),
+      "Automatic ordering restored.",
+    );
+  }
 
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <div className="hero-grid">
-          <div>
-            <h1>Top 10 Tasks</h1>
-            <p>
-              A GitHub-native PWA for keeping the next best ten tasks visible,
-              reorderable, editable, offline-ready, and deployable with GitHub Pages
-              plus GitHub Actions only.
-            </p>
-          </div>
-
-          <div className="panel" style={{ margin: 0 }}>
-            <div className="label-row">
-              <h2 style={{ margin: 0 }}>Private data sync</h2>
-              <span className="small muted">{getIsOnline() ? "Online" : "Offline"}</span>
-            </div>
-
-            <div className="token-grid">
-              <label className="field-group">
-                <span>Data repository owner</span>
-                <input
-                  type="text"
-                  value={syncSettings.owner}
-                  onChange={(event) =>
-                    setSyncSettings((current) => ({
-                      ...current,
-                      owner: event.target.value.trim(),
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="field-group">
-                <span>Private data repository</span>
-                <input
-                  type="text"
-                  value={syncSettings.repo}
-                  placeholder="todo-app"
-                  onChange={(event) =>
-                    setSyncSettings((current) => ({
-                      ...current,
-                      repo: event.target.value.trim(),
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="field-group">
-                <span>Branch</span>
-                <input
-                  type="text"
-                  value={syncSettings.branch}
-                  onChange={(event) =>
-                    setSyncSettings((current) => ({
-                      ...current,
-                      branch: event.target.value.trim(),
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="field-group">
-                <span>GitHub token</span>
-                <input
-                  type="password"
-                  value={syncSettings.token}
-                  placeholder="Stored in this browser only"
-                  onChange={(event) =>
-                    setSyncSettings((current) => ({
-                      ...current,
-                      token: event.target.value.trim(),
-                    }))
-                  }
-                />
-              </label>
-            </div>
-
-            <div className="action-row">
-              <button className="button" type="button" disabled={isSyncing} onClick={() => void handleSync(false)}>
-                {isSyncing ? "Syncing..." : "Sync now"}
-              </button>
-              <span className="small muted">
-                Reads and writes <code>{syncSettings.tasksPath}</code> in the private
-                <code> {syncSettings.repo}</code> repository.
-              </span>
-            </div>
-          </div>
+    <main className="app-shell compact-shell">
+      <header className="topbar">
+        <div className="topbar-copy">
+          <h1>Top 10 Tasks</h1>
+          <p className="small muted">Live sync to the private repository on every change.</p>
         </div>
 
-        <div className="stats-grid">
-          <div className="stat">
-            <strong>{stats.total}</strong>
-            <span>Total active tasks</span>
-          </div>
-          <div className="stat">
-            <strong>{stats.visible}</strong>
-            <span>Visible tasks</span>
-          </div>
-          <div className="stat">
-            <strong>{stats.pending}</strong>
-            <span>Pending sync changes</span>
-          </div>
-          <div className="stat">
-            <strong>{stats.skipped}</strong>
-            <span>Skipped tasks</span>
-          </div>
-        </div>
-
-        <div className={`status-banner ${status.tone}`} style={{ marginTop: "1rem" }}>
-          {status.message}
+        <div className="topbar-actions">
+          <span className={`sync-chip ${isSyncing ? "busy" : ""}`}>
+            {isSyncing ? "Saving..." : getIsOnline() ? "Online" : "Offline"}
+          </span>
+          <button
+            className="menu-button"
+            type="button"
+            aria-label="Open settings"
+            onClick={() => setIsSettingsOpen((current) => !current)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </header>
 
-      <section className="section-stack">
+      <div className={`status-banner ${status.tone} compact-status`}>{status.message}</div>
+
+      {isSettingsOpen ? (
+        <section className="panel settings-panel" aria-labelledby="settings-heading">
+          <div className="label-row">
+            <h2 id="settings-heading">Settings</h2>
+            <button
+              className="button ghost compact-button"
+              type="button"
+              onClick={() => setIsSettingsOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="token-grid">
+            <label className="field-group">
+              <span>Data repository owner</span>
+              <input
+                type="text"
+                value={syncSettings.owner}
+                onChange={(event) =>
+                  setSyncSettings((current) => ({
+                    ...current,
+                    owner: event.target.value.trim(),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="field-group">
+              <span>Private data repository</span>
+              <input
+                type="text"
+                value={syncSettings.repo}
+                placeholder="todo-app"
+                onChange={(event) =>
+                  setSyncSettings((current) => ({
+                    ...current,
+                    repo: event.target.value.trim(),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="field-group">
+              <span>Branch</span>
+              <input
+                type="text"
+                value={syncSettings.branch}
+                onChange={(event) =>
+                  setSyncSettings((current) => ({
+                    ...current,
+                    branch: event.target.value.trim(),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="field-group">
+              <span>GitHub token</span>
+              <input
+                type="password"
+                value={syncSettings.token}
+                placeholder="Stored in this browser only"
+                onChange={(event) =>
+                  setSyncSettings((current) => ({
+                    ...current,
+                    token: event.target.value.trim(),
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          <div className="action-row">
+            <button
+              className="button compact-button"
+              type="button"
+              disabled={isSyncing || !canSync(syncSettings)}
+              onClick={() => void refreshFromRemote(true)}
+            >
+              Refresh
+            </button>
+            <span className="small muted">
+              Reads and writes <code>{syncSettings.tasksPath}</code> in
+              <code> {syncSettings.repo}</code>.
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      <TaskList
+        tasks={visibleTasks}
+        maxVisible={config.maxVisible}
+        moods={config.moods}
+        disabled={!canMutate}
+        onComplete={handleComplete}
+        onSkip={handleSkip}
+        onUnskip={handleUnskip}
+        onMoveTask={handleMoveTask}
+        onMoveDirection={handleMoveDirection}
+        onSaveEdit={handleEditTask}
+      />
+
+      <section className="utility-strip">
+        <button
+          className="button secondary compact-button"
+          type="button"
+          onClick={() => setIsComposerOpen((current) => !current)}
+        >
+          {isComposerOpen ? "Hide add" : "New task"}
+        </button>
+        <button
+          className="button secondary compact-button"
+          type="button"
+          onClick={() => setIsFiltersOpen((current) => !current)}
+        >
+          {isFiltersOpen ? "Hide filters" : "Filters"}
+        </button>
+      </section>
+
+      {isFiltersOpen ? (
         <Filters
           filters={filters}
           moods={config.moods}
           hasManualOrder={hasManualOrder}
+          disabled={isSyncing}
           onChange={setFilters}
           onReset={() => setFilters(defaultFilters)}
           onClearManualOrder={handleClearManualOrder}
         />
+      ) : null}
 
-        <AddTaskForm moods={config.moods} onAddTask={handleAddTask} />
-
-        <TaskList
-          tasks={visibleTasks}
-          maxVisible={config.maxVisible}
+      {isComposerOpen ? (
+        <AddTaskForm
           moods={config.moods}
-          onComplete={handleComplete}
-          onSkip={handleSkip}
-          onUnskip={handleUnskip}
-          onMoveTask={handleMoveTask}
-          onMoveDirection={handleMoveDirection}
-          onSaveEdit={handleEditTask}
+          disabled={!canMutate}
+          onAddTask={handleAddTask}
         />
-      </section>
-
-      <p className="footer-note">
-        Static hosting, offline behavior, and background automation are all kept
-        inside the repository.
-      </p>
+      ) : null}
     </main>
   );
 }

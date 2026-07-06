@@ -4,6 +4,7 @@ interface FiltersProps {
   filters: TaskFilters;
   moods: string[];
   hasManualOrder: boolean;
+  disabled: boolean;
   onChange: (filters: TaskFilters) => void;
   onReset: () => void;
   onClearManualOrder: () => void;
@@ -13,6 +14,7 @@ export default function Filters({
   filters,
   moods,
   hasManualOrder,
+  disabled,
   onChange,
   onReset,
   onClearManualOrder,
@@ -40,6 +42,7 @@ export default function Filters({
           <span>Context</span>
           <select
             value={filters.context}
+            disabled={disabled}
             onChange={(event) =>
               onChange({ ...filters, context: event.target.value as TaskFilters["context"] })
             }
@@ -54,6 +57,7 @@ export default function Filters({
           <span>Importance</span>
           <select
             value={filters.importance}
+            disabled={disabled}
             onChange={(event) =>
               onChange({
                 ...filters,
@@ -76,6 +80,7 @@ export default function Filters({
             <button
               key={mood}
               type="button"
+              disabled={disabled}
               className={`chip ${filters.moods.includes(mood) ? "active" : ""}`}
               onClick={() => toggleMood(mood)}
             >
@@ -86,13 +91,13 @@ export default function Filters({
       </div>
 
       <div className="action-row">
-        <button className="button secondary" type="button" onClick={onReset}>
+        <button className="button secondary compact-button" type="button" disabled={disabled} onClick={onReset}>
           Reset filters
         </button>
         <button
-          className="button ghost"
+          className="button ghost compact-button"
           type="button"
-          disabled={!hasManualOrder}
+          disabled={!hasManualOrder || disabled}
           onClick={onClearManualOrder}
         >
           Clear manual order
@@ -101,4 +106,3 @@ export default function Filters({
     </section>
   );
 }
-

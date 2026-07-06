@@ -6,6 +6,7 @@ interface TaskItemProps {
   index: number;
   isDragging: boolean;
   moods: string[];
+  disabled: boolean;
   onComplete: () => void;
   onSkip: () => void;
   onUnskip: () => void;
@@ -39,6 +40,7 @@ export default function TaskItem({
   index,
   isDragging,
   moods,
+  disabled,
   onComplete,
   onSkip,
   onUnskip,
@@ -94,11 +96,11 @@ export default function TaskItem({
 
   return (
     <article className={`task-card ${isDragging ? "dragging" : ""}`}>
-      <div className="task-header">
+      <div className="task-header compact-task-header">
         <span className="task-rank" aria-label={`Priority ${index + 1}`}>
           {index + 1}
         </span>
-        <div>
+        <div className="task-main">
           <h3 className="task-title">{task.title}</h3>
           <div className="task-meta">
             <span className="pill accent">{task.context}</span>
@@ -125,6 +127,7 @@ export default function TaskItem({
               <button
                 className="button ghost"
                 type="button"
+                disabled={disabled}
                 style={{ marginTop: "0.8rem" }}
                 onClick={() => setShowNotes((current) => !current)}
               >
@@ -142,6 +145,7 @@ export default function TaskItem({
               type="text"
               value={draft.title}
               maxLength={120}
+              disabled={disabled}
               onChange={(event) => updateField("title", event.target.value)}
             />
           </label>
@@ -150,6 +154,7 @@ export default function TaskItem({
             <span>Notes</span>
             <textarea
               value={draft.notes}
+              disabled={disabled}
               onChange={(event) => updateField("notes", event.target.value)}
             />
           </label>
@@ -159,6 +164,7 @@ export default function TaskItem({
               <span>Context</span>
               <select
                 value={draft.context}
+                disabled={disabled}
                 onChange={(event) =>
                   updateField("context", event.target.value as TaskContext)
                 }
@@ -172,6 +178,7 @@ export default function TaskItem({
               <span>Importance</span>
               <select
                 value={draft.importance}
+                disabled={disabled}
                 onChange={(event) =>
                   updateField("importance", Number(event.target.value) as 1 | 2 | 3)
                 }
@@ -190,6 +197,7 @@ export default function TaskItem({
                 <button
                   key={mood}
                   type="button"
+                  disabled={disabled}
                   className={`chip ${draft.mood.includes(mood) ? "active" : ""}`}
                   onClick={() => toggleMood(mood)}
                 >
@@ -203,16 +211,17 @@ export default function TaskItem({
             <input
               type="checkbox"
               checked={draft.bigWin}
+              disabled={disabled}
               onChange={(event) => updateField("bigWin", event.target.checked)}
             />
             <span>Big win</span>
           </label>
 
           <div className="action-row">
-            <button className="button" type="button" disabled={!canSave} onClick={handleSave}>
+            <button className="button compact-button" type="button" disabled={!canSave || disabled} onClick={handleSave}>
               Save
             </button>
-            <button className="button secondary" type="button" onClick={handleCancel}>
+            <button className="button secondary compact-button" type="button" disabled={disabled} onClick={handleCancel}>
               Cancel
             </button>
           </div>
@@ -220,24 +229,24 @@ export default function TaskItem({
       )}
 
       <div className="task-actions">
-        <button className="button secondary" type="button" onClick={onMoveUp}>
-          Move up
+        <button className="button secondary compact-button" type="button" disabled={disabled} onClick={onMoveUp}>
+          Up
         </button>
-        <button className="button secondary" type="button" onClick={onMoveDown}>
-          Move down
+        <button className="button secondary compact-button" type="button" disabled={disabled} onClick={onMoveDown}>
+          Dn
         </button>
-        <button className="button ghost" type="button" onClick={() => setIsEditing((current) => !current)}>
+        <button className="button ghost compact-button" type="button" disabled={disabled} onClick={() => setIsEditing((current) => !current)}>
           {isEditing ? "Close edit" : "Edit"}
         </button>
-        <button className="button" type="button" onClick={onComplete}>
-          Complete
+        <button className="button compact-button" type="button" disabled={disabled} onClick={onComplete}>
+          Done
         </button>
         {task.skipped ? (
-          <button className="button ghost" type="button" onClick={onUnskip}>
-            Reset skip
+          <button className="button ghost compact-button" type="button" disabled={disabled} onClick={onUnskip}>
+            Undo skip
           </button>
         ) : (
-          <button className="button ghost" type="button" onClick={onSkip}>
+          <button className="button ghost compact-button" type="button" disabled={disabled} onClick={onSkip}>
             Skip
           </button>
         )}
@@ -245,4 +254,3 @@ export default function TaskItem({
     </article>
   );
 }
-

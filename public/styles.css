@@ -51,6 +51,11 @@ a {
   padding: 1rem 1rem calc(4rem + env(safe-area-inset-bottom));
 }
 
+.compact-shell {
+  max-width: 760px;
+  padding-top: 0.75rem;
+}
+
 .hero,
 .panel,
 .task-card,
@@ -60,6 +65,67 @@ a {
   backdrop-filter: blur(14px);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
   border-radius: 1.1rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.topbar-copy h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.topbar-copy p {
+  margin: 0.15rem 0 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.menu-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.23rem;
+  border-radius: 0.85rem;
+  border: 1px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.menu-button span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: #0f172a;
+  border-radius: 999px;
+}
+
+.sync-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sync-chip.busy {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .hero {
@@ -110,40 +176,40 @@ a {
 
 .section-stack {
   display: grid;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .panel {
-  padding: 1rem;
+  padding: 0.8rem;
 }
 
 .panel h2,
 .panel h3 {
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.55rem;
 }
 
 .form-grid {
   display: grid;
-  gap: 0.8rem;
+  gap: 0.6rem;
 }
 
 .field-group {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .field-group input,
 .field-group textarea,
 .field-group select {
   width: 100%;
-  padding: 0.8rem 0.9rem;
-  border-radius: 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
   border: 1px solid #cbd5e1;
   background: #fff;
 }
 
 .field-group textarea {
-  min-height: 88px;
+  min-height: 68px;
   resize: vertical;
 }
 
@@ -162,8 +228,9 @@ a {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   background: #fff;
-  padding: 0.45rem 0.8rem;
+  padding: 0.22rem 0.55rem;
   color: #334155;
+  font-size: 0.78rem;
 }
 
 .chip.active {
@@ -180,11 +247,11 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.22rem 0.6rem;
+  padding: 0.12rem 0.45rem;
   border-radius: 999px;
   background: #e2e8f0;
   color: #334155;
-  font-size: 0.85rem;
+  font-size: 0.74rem;
 }
 
 .pill.accent {
@@ -199,11 +266,17 @@ a {
 
 .button {
   border: none;
-  border-radius: 0.9rem;
-  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
   background: #0f172a;
   color: #fff;
   font-weight: 600;
+  line-height: 1.1;
+}
+
+.compact-button {
+  padding: 0.42rem 0.62rem;
+  font-size: 0.78rem;
 }
 
 .button.secondary {
@@ -227,11 +300,11 @@ a {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.42rem;
 }
 
 .task-card {
-  padding: 1rem;
+  padding: 0.55rem 0.6rem;
 }
 
 .task-card.dragging {
@@ -240,41 +313,54 @@ a {
 
 .task-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  line-height: 1.15;
 }
 
 .task-rank {
   display: inline-flex;
-  width: 2rem;
-  height: 2rem;
+  width: 1.55rem;
+  height: 1.55rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: #dbeafe;
   color: #1d4ed8;
   font-weight: 700;
+  font-size: 0.78rem;
 }
 
 .task-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.6rem;
-  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  margin-top: 0.45rem;
+}
+
+.task-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.compact-task-header {
+  align-items: flex-start;
+  gap: 0.45rem;
 }
 
 .notes {
-  margin-top: 0.7rem;
-  padding-top: 0.7rem;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
   border-top: 1px solid #e2e8f0;
   color: #334155;
   white-space: pre-wrap;
+  font-size: 0.82rem;
 }
 
 .edit-panel {
   display: grid;
-  gap: 0.8rem;
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -284,9 +370,10 @@ a {
 }
 
 .status-banner {
-  padding: 0.8rem 0.9rem;
-  border-radius: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
   font-weight: 600;
+  font-size: 0.82rem;
 }
 
 .status-banner.info {
@@ -312,7 +399,7 @@ a {
 }
 
 .small {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
 }
 
 .footer-note {
@@ -322,15 +409,37 @@ a {
   font-size: 0.9rem;
 }
 
+.compact-status {
+  margin-bottom: 0.6rem;
+}
+
+.settings-panel {
+  margin-bottom: 0.6rem;
+}
+
+.utility-strip {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.55rem;
+}
+
 @media (max-width: 640px) {
   .app-shell {
-    padding-left: 0.85rem;
-    padding-right: 0.85rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
   }
 
-  .hero,
   .panel,
   .task-card {
-    border-radius: 1rem;
+    border-radius: 0.9rem;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar-copy h1 {
+    font-size: 1.2rem;
   }
 }

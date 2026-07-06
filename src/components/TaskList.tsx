@@ -6,6 +6,7 @@ interface TaskListProps {
   tasks: Task[];
   maxVisible: number;
   moods: string[];
+  disabled: boolean;
   onComplete: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onUnskip: (taskId: string) => void;
@@ -18,6 +19,7 @@ export default function TaskList({
   tasks,
   maxVisible,
   moods,
+  disabled,
   onComplete,
   onSkip,
   onUnskip,
@@ -41,7 +43,7 @@ export default function TaskList({
   return (
     <section className="section-stack" aria-labelledby="task-list-heading">
       <div className="label-row">
-        <h2 id="task-list-heading">Visible tasks</h2>
+        <h2 id="task-list-heading">Top 10</h2>
         <span className="small muted">
           Showing {tasks.length} of {maxVisible}
         </span>
@@ -67,6 +69,7 @@ export default function TaskList({
               index={index}
               isDragging={draggedId === task.id}
               moods={moods}
+              disabled={disabled}
               onComplete={() => onComplete(task.id)}
               onSkip={() => onSkip(task.id)}
               onUnskip={() => onUnskip(task.id)}
@@ -80,4 +83,3 @@ export default function TaskList({
     </section>
   );
 }
-

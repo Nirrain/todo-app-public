@@ -1,8 +1,5 @@
-import type { AppConfig, PendingChange, SyncSettings, Task } from "../types";
+import type { SyncSettings } from "../types";
 
-const TASKS_CACHE_KEY = "todo-app-public/tasks";
-const CONFIG_CACHE_KEY = "todo-app-public/config";
-const PENDING_CHANGES_KEY = "todo-app-public/pending-changes";
 const SYNC_SETTINGS_KEY = "todo-app-public/sync-settings";
 
 function canUseStorage(): boolean {
@@ -34,40 +31,6 @@ function writeJson(key: string, value: unknown): void {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-export function loadCachedTasks(): Task[] {
-  return readJson<Task[]>(TASKS_CACHE_KEY, []);
-}
-
-export function saveCachedTasks(tasks: Task[]): void {
-  writeJson(TASKS_CACHE_KEY, tasks);
-}
-
-export function loadCachedConfig(): AppConfig | null {
-  return readJson<AppConfig | null>(CONFIG_CACHE_KEY, null);
-}
-
-export function saveCachedConfig(config: AppConfig): void {
-  writeJson(CONFIG_CACHE_KEY, config);
-}
-
-export function loadPendingChanges(): PendingChange[] {
-  return readJson<PendingChange[]>(PENDING_CHANGES_KEY, []);
-}
-
-export function savePendingChanges(changes: PendingChange[]): void {
-  writeJson(PENDING_CHANGES_KEY, changes);
-}
-
-export function queuePendingChange(change: PendingChange): PendingChange[] {
-  const nextChanges = [...loadPendingChanges(), change];
-  savePendingChanges(nextChanges);
-  return nextChanges;
-}
-
-export function clearPendingChanges(): void {
-  savePendingChanges([]);
-}
-
 export function loadSyncSettings(): SyncSettings {
   return readJson<SyncSettings>(SYNC_SETTINGS_KEY, {
     token: "",
@@ -81,34 +44,4 @@ export function loadSyncSettings(): SyncSettings {
 
 export function saveSyncSettings(settings: SyncSettings): void {
   writeJson(SYNC_SETTINGS_KEY, settings);
-}
-
-export function applyPendingChanges(
-  remoteTasks: Task[],
-  changes: PendingChange[],
-): Task[] {
-  let nextTasks = [...remoteTasks];
-
-  for (const change of changes) {
-    if (change.type === "replaceAll") {
-      nextTasks = [...change.tasks];
-      continue;
-    }
-
-    if (change.type === "upsert") {
-      const index = nextTasks.findIndex((task) => task.id === change.task.id);
-
-      if (index === -1) {
-        nextTasks.push(change.task);
-      } else {
-        nextTasks[index] = change.task;
-      }
-    }
-
-    if (change.type === "delete") {
-      nextTasks = nextTasks.filter((task) => task.id !== change.taskId);
-    }
-  }
-
-  return nextTasks;
 }
