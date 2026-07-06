@@ -1,5 +1,8 @@
 import type { RepositoryJsonFile, SyncSettings } from "../types";
 
+const PUBLIC_APP_REPO = "todo-app-public";
+const PRIVATE_DATA_REPO = "todo-app";
+
 function inferGitHubPagesRepo(): Partial<SyncSettings> {
   if (typeof window === "undefined") {
     return {};
@@ -13,11 +16,21 @@ function inferGitHubPagesRepo(): Partial<SyncSettings> {
 
   const owner = hostname.split(".")[0] ?? "";
   const segments = pathname.split("/").filter(Boolean);
-  const repo = segments[0] ?? "";
+  const hostedRepo = segments[0] ?? "";
+
+  if (hostedRepo && hostedRepo !== PUBLIC_APP_REPO) {
+    return {
+      owner,
+      repo: PRIVATE_DATA_REPO,
+      branch: "main",
+      tasksPath: "data/tasks.json",
+      configPath: "data/config.json",
+    };
+  }
 
   return {
     owner,
-    repo,
+    repo: PRIVATE_DATA_REPO,
     branch: "main",
     tasksPath: "data/tasks.json",
     configPath: "data/config.json",
@@ -129,4 +142,3 @@ export async function updateRepositoryJsonFile(
     }),
   });
 }
-

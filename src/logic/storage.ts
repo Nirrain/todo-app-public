@@ -1,9 +1,9 @@
 import type { AppConfig, PendingChange, SyncSettings, Task } from "../types";
 
-const TASKS_CACHE_KEY = "todo-app/tasks";
-const CONFIG_CACHE_KEY = "todo-app/config";
-const PENDING_CHANGES_KEY = "todo-app/pending-changes";
-const SYNC_SETTINGS_KEY = "todo-app/sync-settings";
+const TASKS_CACHE_KEY = "todo-app-public/tasks";
+const CONFIG_CACHE_KEY = "todo-app-public/config";
+const PENDING_CHANGES_KEY = "todo-app-public/pending-changes";
+const SYNC_SETTINGS_KEY = "todo-app-public/sync-settings";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && "localStorage" in window;
@@ -112,4 +112,3 @@ export function applyPendingChanges(
 
   return nextTasks;
 }
-

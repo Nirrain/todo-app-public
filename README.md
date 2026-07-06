@@ -1,6 +1,6 @@
 # Top 10 Tasks
 
-Top 10 Tasks is a TypeScript React + Vite Progressive Web App that runs entirely on standard GitHub features: **GitHub Pages** for hosting, **GitHub Actions** for automation, and repository JSON files for persistence. It keeps a focused top-ten task list, works offline, and syncs `data/tasks.json` back to the repository through the GitHub REST API.
+Top 10 Tasks is a TypeScript React + Vite Progressive Web App that is intended to run from the public **`todo-app-public`** repository while reading and writing task data in the private **`todo-app`** repository. It uses only standard GitHub features: **GitHub Pages** for hosting, **GitHub Actions** for automation, and repository JSON files for persistence.
 
 ## Features
 
@@ -11,6 +11,15 @@ Top 10 Tasks is a TypeScript React + Vite Progressive Web App that runs entirely
 - Offline-first PWA with a service worker and local cache
 - Browser-based GitHub sync with no backend server
 - Repository automation for GitHub Pages deployment and task reflow
+
+## Repository split
+
+- **Public app repo:** `todo-app-public`
+- **Private data repo:** `todo-app`
+- **Hosted app:** GitHub Pages from `todo-app-public`
+- **JSON source of truth:** `data/tasks.json` and `data/config.json` in `todo-app`
+
+The public repo can still include sample JSON so the app has a usable offline bundle, but the intended live read/write target is the private `todo-app` repository.
 
 ## Repository structure
 
@@ -45,16 +54,16 @@ npm install
 npm run dev
 ```
 
-`npm run build` produces the static site in `dist/`. The build copies `data/*.json` into the served app, injects the custom service worker, and prepares the app for GitHub Pages.
+`npm run build` produces the static site in `dist/`. The build copies `data/*.json` into the served app as bundled fallback data, injects the custom service worker, and prepares the app for GitHub Pages in `todo-app-public`.
 
 ## Deploying with GitHub Pages
 
-1. Push the repository to GitHub.
+1. Push this app repository to **`todo-app-public`**.
 2. In **Settings → Pages**, set **Build and deployment** to **GitHub Actions**.
 3. Ensure the default branch is `main` or update `.github/workflows/pages.yml` to match your branch.
 4. Push again or run the **Deploy Pages** workflow manually.
 
-After deployment, the app is available on the repository's GitHub Pages URL.
+After deployment, the app is available on the GitHub Pages URL for `todo-app-public`.
 
 ## Installing the PWA on iPhone
 
@@ -67,34 +76,37 @@ The service worker caches the app shell and task data so the app stays usable of
 
 ## GitHub token setup
 
-The app writes changes directly to `data/tasks.json` through the GitHub REST API. To enable sync:
+The app reads and writes changes directly to the private `todo-app/data/tasks.json` file through the GitHub REST API. To enable sync:
 
 1. Open GitHub **Settings → Developer settings → Personal access tokens**.
 2. Create a token with permission to read and write repository contents.
    - Fine-grained token: **Contents: Read and write**
-   - Classic token: `repo` for private repos or `public_repo` for public repos
+   - Classic token: `repo` is required because the data repository is private
 3. Open the app and fill in:
-   - **Repository owner**
-   - **Repository name**
+   - **Data repository owner**
+   - **Private data repository** (`todo-app`)
    - **Branch**
    - **GitHub token**
 
-The token is stored only in the current browser via localStorage.
+When hosted from a GitHub Pages URL, the app defaults the data repository to `todo-app` under the same owner. The token is stored only in the current browser via localStorage.
 
 ## How syncing works
 
 - The app always works against a local cache first.
+- The published bundle in `todo-app-public` provides fallback JSON for offline startup and first load.
 - New tasks, skips, completions, and manual reorder changes are stored locally immediately.
-- When **Sync now** runs, the app fetches the latest repository copy of `data/tasks.json`, applies pending local changes, reflows the task order, and writes the updated JSON back to GitHub.
+- When **Sync now** runs, the app fetches the latest copy of `data/tasks.json` from the private `todo-app` repository, applies pending local changes, reflows the task order, and writes the updated JSON back there.
 - If you are offline, changes remain queued locally until sync succeeds.
 - If GitHub reports a conflicting file update, the app surfaces the error instead of silently discarding data.
+
+If a token is already stored in the browser, the app automatically refreshes from the private data repository when it starts online.
 
 ## How auto-reflow works
 
 Automatic reflow happens in two places:
 
 1. **In the app** whenever a task is skipped, completed, or manual ordering is cleared.
-2. **In GitHub Actions** via `.github/workflows/reflow.yml` whenever `data/tasks.json` changes or the workflow is dispatched manually.
+2. **In GitHub Actions** via `.github/workflows/reflow.yml` in the repository that owns the live data.
 
 The reflow logic:
 
@@ -102,6 +114,8 @@ The reflow logic:
 - deprioritizes skipped tasks without hiding them
 - preserves the top-ten limit
 - does not add decay, escalation, splitting, or grouping
+
+If you keep the app in `todo-app-public` and the live JSON in private `todo-app`, the reflow workflow should run from the private `todo-app` repository where `data/tasks.json` actually changes.
 
 ## Editing and manual reprioritization
 
@@ -132,7 +146,7 @@ The app supports:
 - importance filtering
 - mood tag filtering
 
-Filters affect which tasks are shown in the current top-ten view. The repository still keeps the full active task set in `data/tasks.json`.
+Filters affect which tasks are shown in the current top-ten view. The private `todo-app` repository still keeps the full active task set in `data/tasks.json`.
 
 ## Data files
 
@@ -149,7 +163,7 @@ Defines available moods and the top-ten cap:
 
 ### `data/tasks.json`
 
-Stores the active task list. Core fields are:
+Stores the active task list in the private `todo-app` repository. Core fields are:
 
 - `id`
 - `title`

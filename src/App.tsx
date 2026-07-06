@@ -97,7 +97,7 @@ export default function App() {
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
   const [status, setStatus] = useState<StatusMessage>({
     tone: "info",
-    message: "Loading cached tasks and GitHub-backed defaults.",
+    message: "Loading cached tasks and private GitHub data defaults.",
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(loadPendingChanges().length);
@@ -146,7 +146,7 @@ export default function App() {
         setStatus({
           tone: "info",
           message: getIsOnline()
-            ? "Ready. Local cache loaded with GitHub Pages data."
+            ? "Ready. Local cache loaded from the public app bundle."
             : "Offline mode active. Using cached task data.",
         });
       } catch (error) {
@@ -167,10 +167,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!getIsOnline() || !syncSettings.token || !hasRepoSettings(syncSettings)) {
+      return;
+    }
+
+    void handleSync(false);
+  }, [syncSettings.token, syncSettings.owner, syncSettings.repo, syncSettings.branch]);
+
+  useEffect(() => {
     function handleOnline() {
       setStatus({
         tone: "info",
-        message: "Connection restored. GitHub sync is available.",
+        message: "Connection restored. Private repository sync is available.",
       });
 
       if (loadPendingChanges().length > 0 && syncSettings.token && hasRepoSettings(syncSettings)) {
@@ -247,7 +255,7 @@ export default function App() {
     commitTaskState(
       [...tasks, task],
       { type: "upsert", task },
-      "Task added locally. Sync to push it back to the repository.",
+      "Task added locally. Sync to push it to the private data repository.",
     );
   }
 
@@ -344,7 +352,7 @@ export default function App() {
     if (!hasRepoSettings(syncSettings)) {
       setStatus({
         tone: "error",
-        message: "Set the GitHub owner, repository, and branch before syncing.",
+        message: "Set the private data repository owner, name, and branch before syncing.",
       });
       return;
     }
@@ -352,7 +360,7 @@ export default function App() {
     if (!syncSettings.token) {
       setStatus({
         tone: "error",
-        message: "Add a GitHub token before pushing changes back to the repository.",
+        message: "Add a GitHub token before reading or writing the private data repository.",
       });
       return;
     }
@@ -388,7 +396,7 @@ export default function App() {
       if (pendingChanges.length === 0) {
         setStatus({
           tone: "success",
-          message: "Repository state refreshed from GitHub.",
+          message: "Private repository state refreshed from GitHub.",
         });
         return;
       }
@@ -407,8 +415,8 @@ export default function App() {
       setStatus({
         tone: "success",
         message: isAutomatic
-          ? "Cached changes were synced to GitHub."
-          : "GitHub repository updated successfully.",
+          ? "Cached changes were synced to the private repository."
+          : "Private GitHub repository updated successfully.",
       });
     } catch (error) {
       const message = getErrorMessage(error);
@@ -445,13 +453,13 @@ export default function App() {
 
           <div className="panel" style={{ margin: 0 }}>
             <div className="label-row">
-              <h2 style={{ margin: 0 }}>GitHub sync</h2>
+              <h2 style={{ margin: 0 }}>Private data sync</h2>
               <span className="small muted">{getIsOnline() ? "Online" : "Offline"}</span>
             </div>
 
             <div className="token-grid">
               <label className="field-group">
-                <span>Repository owner</span>
+                <span>Data repository owner</span>
                 <input
                   type="text"
                   value={syncSettings.owner}
@@ -465,10 +473,11 @@ export default function App() {
               </label>
 
               <label className="field-group">
-                <span>Repository name</span>
+                <span>Private data repository</span>
                 <input
                   type="text"
                   value={syncSettings.repo}
+                  placeholder="todo-app"
                   onChange={(event) =>
                     setSyncSettings((current) => ({
                       ...current,
@@ -513,7 +522,8 @@ export default function App() {
                 {isSyncing ? "Syncing..." : "Sync now"}
               </button>
               <span className="small muted">
-                Writes <code>{syncSettings.tasksPath}</code> using the GitHub REST API.
+                Reads and writes <code>{syncSettings.tasksPath}</code> in the private
+                <code> {syncSettings.repo}</code> repository.
               </span>
             </div>
           </div>
@@ -575,4 +585,3 @@ export default function App() {
     </main>
   );
 }
-
