@@ -28,6 +28,7 @@ export function reflowTasks(tasks: Task[], options: ReflowOptions): Task[] {
       contexts: null,
       categories: null,
       query: "",
+      showCompleted: false,
       sortMode: "importance",
     };
   const ordered = sortTasks(tasks, filters, options.config).map(normalizeTask);

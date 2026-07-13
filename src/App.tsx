@@ -24,6 +24,7 @@ const defaultFilters: TaskFilters = {
   contexts: null,
   categories: null,
   query: "",
+  showCompleted: false,
   sortMode: "importance",
 };
 

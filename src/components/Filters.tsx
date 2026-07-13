@@ -179,6 +179,38 @@ export default function Filters({
         </label>
       </div>
 
+      <div className="filter-block">
+        <span className="filter-label">Completion</span>
+        <div className="toggle-row">
+          <button
+            className={`chip toggle-chip ${!filters.showCompleted ? "active" : ""}`}
+            type="button"
+            disabled={disabled}
+            onClick={() =>
+              onChange({
+                ...filters,
+                showCompleted: false,
+              })
+            }
+          >
+            Active only
+          </button>
+          <button
+            className={`chip toggle-chip ${filters.showCompleted ? "active" : ""}`}
+            type="button"
+            disabled={disabled}
+            onClick={() =>
+              onChange({
+                ...filters,
+                showCompleted: true,
+              })
+            }
+          >
+            Show completed
+          </button>
+        </div>
+      </div>
+
       <div className="action-row">
         <button className="button secondary compact-button" type="button" disabled={disabled} onClick={onReset}>
           Reset filters

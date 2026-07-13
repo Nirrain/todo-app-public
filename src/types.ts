@@ -34,6 +34,7 @@ export interface TaskFilters {
   contexts: TaskContext[] | null;
   categories: string[] | null;
   query: string;
+  showCompleted: boolean;
   sortMode: "importance" | "createdAt" | "dueDate";
 }
 

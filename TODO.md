@@ -1,0 +1,1 @@
+Read @AGENTS.md for general instrctions then check diff on @SPECIFICATIONS.md. Find links from changed section via @CODELINK.md and do the development to make the app be aligned with the specifications.

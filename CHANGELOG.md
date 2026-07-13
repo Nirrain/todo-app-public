@@ -8,6 +8,7 @@ Dates use YYYY-MM-DD.
 - Replaced the placeholder specification with a keyed live app specification in `SPECIFICATION.md`
 - Documented the current task model, UI behavior, ranking rules, sync flow, and PWA/offline behavior as the source of truth
 - Added `CODELINK.json` as an AI-oriented map from third-level spec sections to the primary code owners for each behavior
+- Filters now hide completed tasks by default and expose a completion toggle to show them when needed
 
 ---
 ## 2026-07-06

@@ -151,6 +151,7 @@ The filters panel supports:
 - category toggle chips for configured categories only
 - free-text search
 - sort-mode selection via a compact menu
+- filter out completed tasks per default. Can be switched to show completed tasks.
 
 ### [SPEC-009-B] Search matching
 

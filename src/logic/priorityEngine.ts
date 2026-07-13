@@ -25,6 +25,10 @@ export function normalizeTask(task: Partial<Task> & Pick<Task, "id" | "title" | 
 }
 
 export function matchesFilters(task: Task, filters: TaskFilters): boolean {
+  if (!filters.showCompleted && task.completed) {
+    return false;
+  }
+
   if (filters.contexts !== null && !filters.contexts.includes(task.context)) {
     return false;
   }
