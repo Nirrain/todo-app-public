@@ -4,6 +4,12 @@ The format is simple and chronological.
 Dates use YYYY-MM-DD.
 
 ---
+## 2026-07-13
+- Replaced the placeholder specification with a keyed live app specification in `SPECIFICATION.md`
+- Documented the current task model, UI behavior, ranking rules, sync flow, and PWA/offline behavior as the source of truth
+- Added `CODELINK.json` as an AI-oriented map from third-level spec sections to the primary code owners for each behavior
+
+---
 ## 2026-07-06
 - Sync adjusted to be live
 - Category controlled in settings added

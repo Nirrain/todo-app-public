@@ -56,3 +56,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## General instructions 
 All significant changes should be documented in CHANGELOG.md with 1-3 lines. If an entry for todays date already exist add to that, otherwise make a new entry for today when the changes is done.
+
+## Development process
+@SPECIFICATION.md is always the live defintion of the app and @CODELINK.json  contains the link from sections in @SPECIFICATION.md to a files and functions in code, excluding helper functions.
+Development iterations will be done by changing the @SPECIFICATION.md file analyze the git diff and then use the @CODELINK.md to guide where to investigate.

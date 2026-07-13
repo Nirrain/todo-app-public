@@ -1,0 +1,576 @@
+{
+  "version": 1,
+  "spec": {
+    "file": "SPECIFICATION.md",
+    "maintained_heading_level": 3,
+    "maintained_section_pattern": "^SPEC-[0-9]{3}-[A-Z]$"
+  },
+  "maintenance_rules": [
+    "Maintain entries only for third-level specification sections such as SPEC-003-B.",
+    "Map each section to the smallest set of primary code owners needed to understand or change that behavior.",
+    "Prefer React components, exported domain functions, and named App handlers over line numbers.",
+    "Exclude purely technical helpers unless a helper is the direct implementation of the spec behavior.",
+    "Order targets from most important to least important for that section."
+  ],
+  "sections": {
+    "SPEC-002-A": {
+      "title": "Bundled fallback data",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "initialize"
+          ],
+          "role": "Loads bundled config and tasks during startup before any live repository refresh."
+        },
+        {
+          "file": "scripts/sync-data.mjs",
+          "role": "Copies data/config.json and data/tasks.json into public/data for the shipped fallback bundle."
+        }
+      ]
+    },
+    "SPEC-002-B": {
+      "title": "Live repository mode",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "fetchRemoteState",
+            "refreshFromRemote",
+            "runRemoteMutation"
+          ],
+          "role": "Owns switching from fallback state to the live repository and writing mutations back immediately."
+        },
+        {
+          "file": "src/logic/api.ts",
+          "functions": [
+            "fetchRepositoryJsonFile",
+            "updateRepositoryJsonFile"
+          ],
+          "role": "Implements repository reads and writes through the GitHub API."
+        }
+      ]
+    },
+    "SPEC-003-A": {
+      "title": "Task record",
+      "targets": [
+        {
+          "file": "src/types.ts",
+          "role": "Defines the Task and TaskDraft shapes."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "normalizeTask"
+          ],
+          "role": "Normalizes persisted task fields such as notes, category, completed state, due date, changedAt, and manualOrder."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleAddTask",
+            "handleEditTask",
+            "handleComplete",
+            "handleSkip",
+            "handleUnskip"
+          ],
+          "role": "Creates and mutates task records, including timestamps and task status fields."
+        }
+      ]
+    },
+    "SPEC-003-B": {
+      "title": "Config record",
+      "targets": [
+        {
+          "file": "src/types.ts",
+          "role": "Defines the AppConfig shape."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "normalizeConfig",
+            "handleAddCategory",
+            "handleDeleteCategory"
+          ],
+          "role": "Normalizes config data and manages category mutations that update config.json."
+        }
+      ]
+    },
+    "SPEC-003-C": {
+      "title": "Sync settings",
+      "targets": [
+        {
+          "file": "src/types.ts",
+          "role": "Defines the SyncSettings shape."
+        },
+        {
+          "file": "src/logic/storage.ts",
+          "functions": [
+            "loadSyncSettings",
+            "saveSyncSettings"
+          ],
+          "role": "Persists sync settings in browser local storage."
+        },
+        {
+          "file": "src/logic/api.ts",
+          "functions": [
+            "getDefaultSyncSettings"
+          ],
+          "role": "Provides default sync settings values before stored values are merged in."
+        }
+      ]
+    },
+    "SPEC-004-A": {
+      "title": "Status messaging",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "initialize",
+            "refreshFromRemote",
+            "runRemoteMutation"
+          ],
+          "role": "Owns the status banner state and updates it for loading, fallback, success, and error states."
+        }
+      ]
+    },
+    "SPEC-004-B": {
+      "title": "Online and offline transitions",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleOnline",
+            "handleOffline",
+            "refreshFromRemote"
+          ],
+          "role": "Responds to browser connectivity changes, updates status, and refreshes remote data when possible."
+        }
+      ]
+    },
+    "SPEC-006-A": {
+      "title": "Ranked list",
+      "targets": [
+        {
+          "file": "src/components/TaskList.tsx",
+          "component": "TaskList",
+          "role": "Renders the visible ranked list and the load-more control."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "role": "Computes rankedTasks, visibleTasks, visibleCount, and the load-more behavior."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "sortTasks"
+          ],
+          "role": "Produces the ranked ordering used by the list."
+        }
+      ]
+    },
+    "SPEC-006-B": {
+      "title": "Empty state",
+      "targets": [
+        {
+          "file": "src/components/TaskList.tsx",
+          "component": "TaskList",
+          "role": "Shows the empty-state message when no tasks match the current view."
+        }
+      ]
+    },
+    "SPEC-006-C": {
+      "title": "Task card display",
+      "targets": [
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "role": "Renders each visible task card, its pills, category chip, notes toggle, and action buttons."
+        }
+      ]
+    },
+    "SPEC-007-A": {
+      "title": "Add-task form",
+      "targets": [
+        {
+          "file": "src/components/AddTaskForm.tsx",
+          "component": "AddTaskForm",
+          "role": "Renders the new-task form and validates the required title before submit."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleAddTask"
+          ],
+          "role": "Creates the persisted task payload, timestamps, and save flow for new tasks."
+        }
+      ]
+    },
+    "SPEC-007-B": {
+      "title": "Inline edit form",
+      "targets": [
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "functions": [
+            "handleSave"
+          ],
+          "role": "Renders and submits the inline edit form for a visible task."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleEditTask"
+          ],
+          "role": "Applies edited task fields and persists them to the repository."
+        }
+      ]
+    },
+    "SPEC-008-A": {
+      "title": "Complete toggle",
+      "targets": [
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "role": "Owns the Done button label and dispatch."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleComplete"
+          ],
+          "role": "Toggles the completed field and persists the change."
+        }
+      ]
+    },
+    "SPEC-008-B": {
+      "title": "Skip toggle",
+      "targets": [
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "role": "Owns the Skip and Undo skip button dispatch."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleSkip",
+            "handleUnskip"
+          ],
+          "role": "Sets and clears the skipped flag and persists the change."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "scoreTask"
+          ],
+          "role": "Applies the skipped-task ranking penalty."
+        }
+      ]
+    },
+    "SPEC-008-C": {
+      "title": "Manual ordering",
+      "targets": [
+        {
+          "file": "src/components/TaskList.tsx",
+          "component": "TaskList",
+          "role": "Handles drag-and-drop interactions for manual reordering."
+        },
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "role": "Exposes Up and Dn controls for manual task movement."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleMoveTask",
+            "handleMoveDirection"
+          ],
+          "role": "Computes the new visible ordering and dispatches the persisted manual order."
+        },
+        {
+          "file": "src/logic/reflowEngine.ts",
+          "functions": [
+            "applyManualOrder"
+          ],
+          "role": "Writes manualOrder indexes onto the reordered task list."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "sortTasks"
+          ],
+          "role": "Makes manualOrder take precedence over automatic ranking."
+        }
+      ]
+    },
+    "SPEC-008-D": {
+      "title": "Clear manual order",
+      "targets": [
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Renders the Clear manual order action."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleClearManualOrder"
+          ],
+          "role": "Dispatches the reset from manual ordering back to automatic ordering."
+        },
+        {
+          "file": "src/logic/reflowEngine.ts",
+          "functions": [
+            "clearManualOrder",
+            "reflowTasks"
+          ],
+          "role": "Removes manualOrder values and reflows the task list."
+        }
+      ]
+    },
+    "SPEC-009-A": {
+      "title": "Filter controls",
+      "targets": [
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Renders context chips, category chips, search input, sort menu, and reset actions."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "role": "Owns filter state and passes change/reset handlers into the filter UI."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "matchesFilters",
+            "sortTasks"
+          ],
+          "role": "Applies the active filter set before ranking tasks."
+        }
+      ]
+    },
+    "SPEC-009-B": {
+      "title": "Search matching",
+      "targets": [
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Captures the free-text search query."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "matchesFilters"
+          ],
+          "role": "Performs case-insensitive matching across task title, notes, and category."
+        }
+      ]
+    },
+    "SPEC-009-C": {
+      "title": "Sort modes",
+      "targets": [
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Renders the sort mode chooser and its available options."
+        },
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "sortTasks"
+          ],
+          "role": "Implements importance, createdAt, and dueDate ordering rules."
+        }
+      ]
+    },
+    "SPEC-009-D": {
+      "title": "Automatic score",
+      "targets": [
+        {
+          "file": "src/logic/priorityEngine.ts",
+          "functions": [
+            "scoreTask",
+            "sortTasks"
+          ],
+          "role": "Defines the base score and how skipped state affects automatic ranking."
+        }
+      ]
+    },
+    "SPEC-009-E": {
+      "title": "Filter reset behavior",
+      "targets": [
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Exposes the Reset filters action."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "role": "Defines the default filter state and restores it on reset."
+        }
+      ]
+    },
+    "SPEC-010-A": {
+      "title": "Settings navigation",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "closeSettingsPanel",
+            "toggleSettingsPanel"
+          ],
+          "role": "Controls settings visibility and subview selection behavior."
+        }
+      ]
+    },
+    "SPEC-010-B": {
+      "title": "Login settings",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "refreshFromRemote"
+          ],
+          "role": "Renders and updates the login fields and refresh action."
+        },
+        {
+          "file": "src/logic/storage.ts",
+          "functions": [
+            "loadSyncSettings",
+            "saveSyncSettings"
+          ],
+          "role": "Stores the GitHub token and repository settings in browser local storage."
+        }
+      ]
+    },
+    "SPEC-010-C": {
+      "title": "Repository inference",
+      "targets": [
+        {
+          "file": "src/logic/api.ts",
+          "functions": [
+            "inferGitHubPagesRepo",
+            "getDefaultSyncSettings"
+          ],
+          "role": "Infers default owner and repository values from a GitHub Pages URL."
+        },
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "buildInitialSyncSettings"
+          ],
+          "role": "Merges inferred defaults with stored browser settings during startup."
+        }
+      ]
+    },
+    "SPEC-010-D": {
+      "title": "Category management",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "handleAddCategory",
+            "handleDeleteCategory"
+          ],
+          "role": "Adds and removes allowed categories and clears removed values from existing tasks."
+        },
+        {
+          "file": "src/components/AddTaskForm.tsx",
+          "component": "AddTaskForm",
+          "role": "Uses the configured category list for new tasks."
+        },
+        {
+          "file": "src/components/TaskItem.tsx",
+          "component": "TaskItem",
+          "role": "Uses the configured category list during inline edits."
+        },
+        {
+          "file": "src/components/Filters.tsx",
+          "component": "Filters",
+          "role": "Uses the configured category list for category filter chips."
+        }
+      ]
+    },
+    "SPEC-011-A": {
+      "title": "Mutation preconditions",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "canSync",
+            "hasRepoSettings",
+            "runRemoteMutation"
+          ],
+          "role": "Checks whether the browser is online, credentials exist, repository settings are complete, and no sync is already in flight."
+        }
+      ]
+    },
+    "SPEC-011-B": {
+      "title": "Save model",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "fetchRemoteState",
+            "runRemoteMutation"
+          ],
+          "role": "Fetches live state, applies mutations, reflows tasks, and coordinates which files are written."
+        },
+        {
+          "file": "src/logic/api.ts",
+          "functions": [
+            "fetchRepositoryJsonFile",
+            "updateRepositoryJsonFile"
+          ],
+          "role": "Implements repository file fetches and writes."
+        },
+        {
+          "file": "src/logic/reflowEngine.ts",
+          "functions": [
+            "reflowTasks"
+          ],
+          "role": "Normalizes final task ordering before persisted writes."
+        }
+      ]
+    },
+    "SPEC-011-C": {
+      "title": "Conflict handling",
+      "targets": [
+        {
+          "file": "src/App.tsx",
+          "component": "App",
+          "functions": [
+            "isConflictError",
+            "runRemoteMutation",
+            "refreshFromRemote"
+          ],
+          "role": "Detects SHA conflicts, retries with backoff, refreshes remote state, and reports the final error state."
+        }
+      ]
+    }
+  }
+}
