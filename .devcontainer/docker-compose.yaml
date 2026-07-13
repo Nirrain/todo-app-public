@@ -1,0 +1,29 @@
+services:
+  devcontainer:
+    build:
+      dockerfile: Dockerfile
+
+    volumes:
+      # Mount ONLY the workspace (not parent directories)
+      - ..:/workspace:cached
+
+      # Reuse GitHub auth and Git settings from the WSL host
+      - ${HOME}/.config/gh:/home/vscode/.config/gh:ro
+      - ${HOME}/.gitconfig:/home/vscode/.gitconfig-host:ro
+
+      # Fast named volumes for Python caches
+      - venv:/home/vscode/.venv
+      - pip-cache:/home/vscode/.cache/pip
+      - pycache:/home/vscode/.pycache
+
+      # Persist Claude Code memory and settings (keeps memory between rebuilds)
+      - claude-data:/home/vscode/.claude
+
+    # Keep container running
+    command: sleep infinity
+
+volumes:
+  venv:
+  pip-cache:
+  pycache:
+  claude-data:

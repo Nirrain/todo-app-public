@@ -1,0 +1,109 @@
+{
+  "name": "developer-sandbox",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+
+  // ============================================================================
+  // Features: Tools and utilities available in the container
+  // ============================================================================
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "username": "vscode"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+
+    // Python linting/formatting
+    "ghcr.io/jsburckhardt/devcontainer-features/ruff:1": {}
+  },
+
+  // ============================================================================
+  // VS Code customizations
+  // ============================================================================
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/home/vscode/.venv/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        "terminal.integrated.env.linux": {
+          "PYTHONPATH": "/workspace"
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "eamodio.gitlens",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+
+  // ============================================================================
+  // Environment variables
+  // ============================================================================
+  "remoteEnv": {
+    // Python configuration
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONPYCACHEPREFIX": "/home/vscode/.pycache",
+    "PIP_CACHE_DIR": "/home/vscode/.cache/pip",
+    "VIRTUAL_ENV": "/home/vscode/.venv",
+    "PATH": "/home/vscode/.venv/bin:${containerEnv:PATH}",
+
+    // Claude Code configuration
+    "CLAUDE_CODE_PROJECT_ROOT": "/workspace",
+
+    // Reuse host WSL GitHub CLI auth inside the container
+    "GH_CONFIG_DIR": "/home/vscode/.config/gh",
+
+    // ============================================================================
+    // LiteLLM Configuration
+    // ============================================================================
+    // Claude Code connects to LiteLLM proxy instead of Anthropic API directly.
+    // The ${localEnv:VAR_NAME} syntax reads from the developer's host environment,
+    // keeping secrets out of this file.
+
+    // Set your LiteLLM proxy URL (if not set defaults to Tinker-Tailor public proxy)
+    "ANTHROPIC_BASE_URL": "https://tinker-tailor-gateway.ndp-sandbox.novonesis.com",
+
+    // Set your LiteLLM key:
+    // you should set LITELLM_API_KEY in your shell before opening the container and use code . to open the devcontainer, then this variable will be passed through to the container environment.
+    "ANTHROPIC_AUTH_TOKEN": "${localEnv:LITELLM_API_KEY}",
+
+    // set default models
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    
+    // ============================================================================
+
+    "ENVIRONMENT": "development"
+  },
+
+  // ============================================================================
+  // Lifecycle commands
+  // ============================================================================
+
+  // Run once when container is created
+  "onCreateCommand": "sudo mkdir -p /home/vscode/.cache/uv /home/vscode/.cache/pip /home/vscode/.pycache /home/vscode/.venv && sudo chown -R vscode:vscode /home/vscode/.cache /home/vscode/.pycache /home/vscode/.venv",
+
+  // Run after container is created (install dependencies)
+  "postCreateCommand": "python -m venv /home/vscode/.venv && . /home/vscode/.venv/bin/activate && uv pip install --no-compile --upgrade pip",
+
+  // Run every time container starts
+  "postStartCommand": "bash /workspace/.devcontainer/setup-host-github-auth.sh && echo 'This devcontainer has Claude Code enabled! Use carefully.'",
+
+  // Shutdown behavior
+  "shutdownAction": "stopCompose"
+}
